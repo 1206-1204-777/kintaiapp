@@ -5,11 +5,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class UserResponse {
-    private Long id;
     private Long userId;
     private String username;
-    private boolean status;
+    private String token;  // JWTトークンなどの認証トークン
+    private Long locationId;
+    private String locationName;
 }

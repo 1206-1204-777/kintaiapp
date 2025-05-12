@@ -11,180 +11,201 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.kinntai.dto.AttendanceResponse;
 import com.example.kinntai.entity.Attendance;
 import com.example.kinntai.entity.User;
-import com.example.kinntai.entity.WorkingHour;
 import com.example.kinntai.repository.AttendanceRepository;
 import com.example.kinntai.repository.UserRepository;
-import com.example.kinntai.repository.WorkingHourRepository;
 
 @Service
 public class AttendanceService {
-    
+
     @Autowired
     private AttendanceRepository attendanceRepository;
     
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private WorkingHourRepository workingHourRepository;
+    
     /**
-     * 出勤打刻
+     * 出勤処理
      */
     @Transactional
     public Attendance clockIn(Long userId) {
-        // ユーザーの存在確認
-        User user = getUserByUserId(userId);
-        
-        // 今日の日付
-        LocalDate today = LocalDate.now();
-        
-        // 既存の勤怠記録を確認
-        Optional<Attendance> existingAttendance = attendanceRepository.findByUserIdAndDate(userId, today);
-        
-        if (existingAttendance.isPresent()) {
-            Attendance attendance = existingAttendance.get();
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
             
-            // すでに出勤打刻済みの場合
+            LocalDate today = LocalDate.now();
+            
+            // 当日の勤怠記録を取得または作成
+            Attendance attendance = attendanceRepository.findByUserAndDate(user, today)
+                    .orElse(new Attendance(user, today));
+            
+            // 既に出勤済みの場合はエラー
             if (attendance.getClockIn() != null) {
-                throw new RuntimeException("すでに出勤打刻されています");
+                throw new RuntimeException("すでに出勤済みです");
             }
             
-            // 出勤時間を設定
-            attendance.setClockIn(LocalDateTime.now());
-            return attendanceRepository.save(attendance);
-        } else {
-            // 新しい勤怠記録を作成
-            Attendance attendance = new Attendance();
-            attendance.setUserId(userId);
-            attendance.setDate(today);
+            // 出勤時刻を設定
             attendance.setClockIn(LocalDateTime.now());
             
             return attendanceRepository.save(attendance);
+        } catch (Exception e) {
+            System.err.println("出勤処理エラー: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
     }
     
     /**
-     * 退勤打刻
+     * 退勤処理
      */
     @Transactional
     public Attendance clockOut(Long userId) {
-        // ユーザーの存在確認
-        User user = getUserByUserId(userId);
-        
-        // 今日の日付
-        LocalDate today = LocalDate.now();
-        
-        // 勤怠記録を確認
-        Optional<Attendance> existingAttendance = attendanceRepository.findByUserIdAndDate(userId, today);
-        
-        if (existingAttendance.isEmpty()) {
-            throw new RuntimeException("出勤打刻がありません");
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+            
+            LocalDate today = LocalDate.now();
+            
+            // 当日の勤怠記録を取得
+            Attendance attendance = attendanceRepository.findByUserAndDate(user, today)
+                    .orElseThrow(() -> new RuntimeException("本日の出勤記録がありません"));
+            
+            // 出勤していない場合はエラー
+            if (attendance.getClockIn() == null) {
+                throw new RuntimeException("まだ出勤していません");
+            }
+            
+            // 既に退勤済みの場合はエラー
+            if (attendance.getClockOut() != null) {
+                throw new RuntimeException("すでに退勤済みです");
+            }
+            
+            // 退勤時刻を設定
+            attendance.setClockOut(LocalDateTime.now());
+            
+            return attendanceRepository.save(attendance);
+        } catch (Exception e) {
+            System.err.println("退勤処理エラー: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-        
-        Attendance attendance = existingAttendance.get();
-        
-        // 出勤打刻が存在しない場合
-        if (attendance.getClockIn() == null) {
-            throw new RuntimeException("出勤打刻がありません");
-        }
-        
-        // すでに退勤打刻済みの場合
-        if (attendance.getClockOut() != null) {
-            throw new RuntimeException("すでに退勤打刻されています");
-        }
-        
-        // 退勤時間を設定
-        attendance.setClockOut(LocalDateTime.now());
-        return attendanceRepository.save(attendance);
     }
     
     /**
-     * 月別勤怠取得
+     * 現在の勤務状況を取得
      */
-    public List<Attendance> getMonthlyAttendances(Long userId, String month) {
-        // ユーザーの存在確認
-        User user = getUserByUserId(userId);
+    public AttendanceResponse getAttendanceStatus(Long userId) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+            
+            LocalDate today = LocalDate.now();
+            
+            // 当日の勤怠記録を取得
+            Optional<Attendance> attendanceOpt = attendanceRepository.findByUserAndDate(user, today);
+            
+            AttendanceResponse response = new AttendanceResponse();
+            response.setUserId(userId);
+            response.setDate(today);
+            
+            if (attendanceOpt.isPresent()) {
+                Attendance attendance = attendanceOpt.get();
+                response.setId(attendance.getId());
+                response.setClockIn(attendance.getClockIn());
+                response.setClockOut(attendance.getClockOut());
+                
+                // 勤務中かどうかの判定
+                response.setWorking(attendance.getClockIn() != null && attendance.getClockOut() == null);
+            } else {
+                response.setWorking(false);
+            }
+            
+            return response;
+        } catch (Exception e) {
+            System.err.println("勤務状態確認エラー: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+    
+    /**
+     * 特定の日の勤怠情報を取得
+     */
+    public Optional<Attendance> getAttendanceByDate(Long userId, LocalDate date) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
         
-        // 月の解析
-        YearMonth yearMonth = YearMonth.parse(month);
-        int year = yearMonth.getYear();
-        int monthValue = yearMonth.getMonthValue();
+        return attendanceRepository.findByUserAndDate(user, date);
+    }
+    
+    /**
+     * 月次の勤怠情報を取得
+     */
+    public List<Attendance> getMonthlyAttendance(Long userId, int year, int month) {
+        YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDate startDate = yearMonth.atDay(1);
+        LocalDate endDate = yearMonth.atEndOfMonth();
         
-        // データを取得
-        List<Attendance> attendances = attendanceRepository.findMonthlyAttendances(userId, year, monthValue);
+        return attendanceRepository.findByUserIdAndDateBetweenOrderByDateAsc(userId, startDate, endDate);
+    }
+    
+    /**
+     * 月次の勤怠情報を取得（文字列指定）
+     */
+    public List<Attendance> getMonthlyAttendance(Long userId, String yearMonth) {
+        try {
+            System.out.println("勤怠履歴取得: userId=" + userId + ", month=" + yearMonth);
+            
+            // yearMonth 形式は "YYYY-MM"
+            String[] parts = yearMonth.split("-");
+            if (parts.length != 2) {
+                throw new IllegalArgumentException("月の形式が不正です。YYYY-MM 形式で指定してください。");
+            }
+            
+            int year = Integer.parseInt(parts[0]);
+            int month = Integer.parseInt(parts[1]);
+            
+            return getMonthlyAttendance(userId, year, month);
+        } catch (Exception e) {
+            System.err.println("月次勤怠取得エラー: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+    
+    /**
+     * 期間内の勤怠情報を月曜～日曜の週で生成（存在しない日も含める）
+     */
+    public List<Attendance> generateWeeklyAttendances(Long userId, LocalDate startDate, LocalDate endDate) {
+        List<Attendance> attendances = attendanceRepository.findByUserIdAndDateBetweenOrderByDateAsc(
+                userId, startDate, endDate);
         
-        // 月の全日付分のデータを用意
         List<Attendance> result = new ArrayList<>();
         
-        // 月の各日についてデータを準備
-        for (int day = 1; day <= yearMonth.lengthOfMonth(); day++) {
-            LocalDate date = yearMonth.atDay(day);
+        // 存在する勤怠情報をマップに格納
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            final LocalDate currentDate = date;
             
-            // すでにデータがある日付はそのまま使用
-            boolean found = false;
-            for (Attendance attendance : attendances) {
-                if (attendance.getDate().equals(date)) {
-                    result.add(attendance);
-                    found = true;
-                    break;
-                }
+            // 既存の勤怠情報があればそれを使う、なければ新しく作る
+            Attendance attendance = attendances.stream()
+                    .filter(a -> a.getDate().equals(currentDate))
+                    .findFirst()
+                    .orElse(null);
+            
+            if (attendance == null) {
+                User user = new User();
+                user.setId(userId);
+                
+                attendance = new Attendance();
+                attendance.setUser(user);
+                attendance.setDate(currentDate);
             }
             
-            // データがない日付は空のデータを作成
-            if (!found) {
-                Attendance emptyAttendance = new Attendance();
-                emptyAttendance.setUserId(userId);
-                emptyAttendance.setDate(date);
-                result.add(emptyAttendance);
-            }
+            result.add(attendance);
         }
         
         return result;
     }
-    
-    /**
-     * 特定日の勤怠取得
-     */
-    public Attendance getAttendanceByDate(Long userId, LocalDate date) {
-        // ユーザーの存在確認
-        User user = getUserByUserId(userId);
-        
-        // データを取得
-        Optional<Attendance> attendance = attendanceRepository.findByUserIdAndDate(userId, date);
-        
-        return attendance.orElse(null);
-    }
-    
-    /**
-     * 現在の勤怠状態を確認
-     */
-    public boolean isWorking(Long userId) {
-        // ユーザーの存在確認
-        User user = getUserByUserId(userId);
-        
-        // 今日の日付
-        LocalDate today = LocalDate.now();
-        
-        // 勤怠記録を確認
-        Optional<Attendance> attendance = attendanceRepository.findByUserIdAndDate(userId, today);
-        
-        // 出勤済みで退勤していない場合は勤務中
-        return attendance.isPresent() && 
-               attendance.get().getClockIn() != null && 
-               attendance.get().getClockOut() == null;
-    }
-    
-    /**
-     * ユーザーIDからユーザーを取得
-     */
-    private User getUserByUserId(Long userId) {
-        return userRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません: " + userId));
-    }
-    
-    public Optional<WorkingHour> getWorkingHour(Long userId, LocalDate date) {
-        return workingHourRepository.findTopByUserIdAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(userId, date);
-    }
-
 }
