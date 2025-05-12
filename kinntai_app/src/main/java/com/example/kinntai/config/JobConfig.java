@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import com.example.kinntai.tasklet.AttendanceWeeklyTasklet;
+import com.example.kinntai.tasklet.AttendanceExcelTasklet;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,19 +18,33 @@ import lombok.RequiredArgsConstructor;
 public class JobConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-    private final AttendanceWeeklyTasklet tasklet;
+    private final AttendanceExcelTasklet tasklet;
 
+//    @Bean
+//    public Step attendanceWeeklyStep() {
+//        return new StepBuilder("attendanceWeeklyStep", jobRepository)
+//                .tasklet(tasklet, transactionManager)
+//                .build();
+//    }
+//
+//    @Bean
+//    public Job attendanceCsvJob() {
+//        return new JobBuilder("attendanceCsvJob", jobRepository)
+//                .start(attendanceWeeklyStep())
+//                .build();
+//    }
+    
     @Bean
-    public Step attendanceWeeklyStep() {
-        return new StepBuilder("attendanceWeeklyStep", jobRepository)
+    public Step weeklySummaryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("weeklySummaryStep", jobRepository)
                 .tasklet(tasklet, transactionManager)
                 .build();
     }
 
     @Bean
-    public Job attendanceCsvJob() {
-        return new JobBuilder("attendanceCsvJob", jobRepository)
-                .start(attendanceWeeklyStep())
+    public Job weeklySummaryJob(JobRepository jobRepository) {
+        return new JobBuilder("weeklySummaryJob", jobRepository)
+                .start(weeklySummaryStep(jobRepository, transactionManager))
                 .build();
     }
 }

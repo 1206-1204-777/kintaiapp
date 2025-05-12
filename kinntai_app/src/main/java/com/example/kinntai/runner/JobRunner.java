@@ -14,12 +14,12 @@ import lombok.RequiredArgsConstructor;
 public class JobRunner implements CommandLineRunner {
 
     private final JobLauncher jobLauncher;
-    private final Job attendanceWeeklyJob; // Job名はJobConfigで定義した名前と一致するものを指定
+    private final Job attendanceWeeklyJob;  //Job名はJobConfigで定義した名前と一致するものを指定
 
     @Override
     public void run(String... args) throws Exception {
         JobParameters params = new JobParametersBuilder()
-                .addLong("time", System.currentTimeMillis()) // 同一JobInstanceを避けるため
+                .addLong("time", System.currentTimeMillis())  //同一JobInstanceを避けるため
                 .toJobParameters();
 
         jobLauncher.run(attendanceWeeklyJob, params);
