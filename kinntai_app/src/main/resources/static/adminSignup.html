@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>管理者勤怠一覧</title>
+</head>
+<body>
+    <h1>全ユーザーの勤怠一覧</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ユーザー名</th>
+                <th>日付</th>
+                <th>出勤時刻</th>
+                <th>退勤時刻</th>
+                <th>勤務中</th>
+            </tr>
+        </thead>
+        <tbody id="attendance-table">
+            <!-- データはここに表示 -->
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchAttendances() {
+            try {
+                const response = await fetch('/admin/attendances');
+                if (!response.ok) {
+                    throw new Error('データ取得に失敗しました');
+                }
+
+                const data = await response.json();
+                const table = document.getElementById('attendance-table');
+                table.innerHTML = '';
+
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.name || '未設定'}</td>
+                        <td>${item.date}</td>
+                        <td>${item.clockIn ? item.clockIn.replace('T', ' ') : '-'}</td>
+                        <td>${item.clockOut ? item.clockOut.replace('T', ' ') : '-'}</td>
+                        <td>${item.working ? '勤務中' : '退勤済'}</td>
+                    `;
+                    table.appendChild(row);
+                });
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        window.onload = fetchAttendances;
+    </script>
+</body>
+</html>

@@ -16,27 +16,27 @@ import com.example.kinntai.service.impl.UserService;
 @CrossOrigin(origins = "*")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+	@Autowired
+	private UserService userService;
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<?> getUserInfo(@PathVariable Long userId) {
-        try {
-            return userService.findById(userId)
-                    .map(user -> ResponseEntity.ok(user))
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-    
-    @GetMapping("/{userId}/location")
-    public ResponseEntity<UserLocationResponse> getUserLocation(@PathVariable Long userId) {
-        try {
-            UserLocationResponse response = userService.getUserLocationInfo(userId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
+	@GetMapping("/{userId}")
+	public ResponseEntity<?> getUserInfo(@PathVariable Long userId) {
+		try {
+			return userService.findById(userId)
+					.map(user -> ResponseEntity.ok(user))
+					.orElse(ResponseEntity.notFound().build());
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
+
+	@GetMapping("/{userId}/location")
+	public ResponseEntity<UserLocationResponse> getUserLocation(@PathVariable Long userId) {
+		try {
+			UserLocationResponse response = userService.getUserLocationInfo(userId);
+			return ResponseEntity.ok(response);
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().build();
+		}
+	}
 }

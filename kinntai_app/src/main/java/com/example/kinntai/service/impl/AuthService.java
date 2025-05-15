@@ -35,12 +35,18 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setPassword(encodedPassword); // BCryptでエンコードされたパスワード
         
+        if(request.getStartTime() !=null || request.getEndTime() != null) {
+        	user.setDefaultStartTime((request.getStartTime()));
+        	user.setDefaultEndTime(request.getEndTime());
+        }
         User savedUser = userRepository.save(user);
         
         // レスポンスの作成
         UserResponse response = new UserResponse();
         response.setUserId(savedUser.getId());
         response.setUsername(savedUser.getUsername());
+        response.setStartTime(savedUser.getDefaultStartTime());
+        response.setEndTime(savedUser.getDefaultEndTime());
         response.setToken("dummy-token-" + savedUser.getId());
         
         // 勤務地情報が設定されている場合はそれも含める
