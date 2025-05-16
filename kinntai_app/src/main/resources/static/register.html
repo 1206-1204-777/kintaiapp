@@ -63,205 +63,164 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="register-form">
-            <h1>ユーザー登録</h1>
-            <div id="errorMessage" class="error-message"></div>
-            <form id="registerForm">
-                <div class="form-group">
-                    <label for="username">ユーザー名</label>
-                    <input type="text" class="form-control" id="username" name="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">パスワード</label>
-                    <input type="password" class="form-control" id="password" name="password" required>
-                </div>
-                <div class="form-group">
-                    <label for="confirmPassword">パスワード（確認）</label>
-                    <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
-                </div>
-                <hr>
-                <div class="form-group">
-                    <label for="locationName">勤務地名</label>
-                    <input type="text" class="form-control" id="locationName" name="locationName" required>
-                </div>
-                <div class="form-group">
-                    <label for="startTime">開始時刻</label>
-                    <input type="time" class="form-control" id="startTime" name="startTime" required>
-                </div>
-                <div class="form-group">
-                    <label for="endTime">終了時刻</label>
-                    <input type="time" class="form-control" id="endTime" name="endTime" required>
-                </div>
-                <button type="submit" class="btn btn-register" id="registerButton">登録</button>
-                <div class="loading-spinner" id="loadingSpinner">
-                    <div class="spinner-border text-success" role="status">
-                        <span class="sr-only">登録中...</span>
-                    </div>
-                    <p>登録処理中...</p>
-                </div>
-            </form>
-            <div class="login-link">
-                <p>すでにアカウントをお持ちの方は <a href="login.html">ログイン</a></p>
+<div class="container">
+    <div class="register-form">
+        <h1>ユーザー登録</h1>
+        <div id="errorMessage" class="error-message"></div>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">ユーザー名</label>
+                <input type="text" class="form-control" id="username" name="username" required>
             </div>
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">パスワード（確認）</label>
+                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            <hr>
+            <div class="form-group">
+                <label for="locationName">勤務地名</label>
+                <input type="text" class="form-control" id="locationName" name="locationName" required>
+            </div>
+            <div class="form-group">
+                <label for="startTime">開始時刻</label>
+                <input type="time" class="form-control" id="startTime" name="startTime" required>
+            </div>
+            <div class="form-group">
+                <label for="endTime">終了時刻</label>
+                <input type="time" class="form-control" id="endTime" name="endTime" required>
+            </div>
+            <button type="submit" class="btn btn-register" id="registerButton">登録</button>
+            <div class="loading-spinner" id="loadingSpinner">
+                <div class="spinner-border text-success" role="status">
+                    <span class="sr-only">登録中...</span>
+                </div>
+                <p>登録処理中...</p>
+            </div>
+        </form>
+        <div class="login-link">
+            <p>すでにアカウントをお持ちの方は <a href="login.html">ログイン</a></p>
         </div>
     </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // すでにログイン済みの場合はダッシュボードにリダイレクト
-            if (localStorage.getItem('userId')) {
-                window.location.href = 'index.html';
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (localStorage.getItem('userId')) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        const registerForm = document.getElementById('registerForm');
+        const registerButton = document.getElementById('registerButton');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const locationName = document.getElementById('locationName').value.trim();
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            if (!username || !password || !confirmPassword || !locationName || !startTime || !endTime) {
+                showError("すべてのフィールドを入力してください");
                 return;
             }
 
-            const registerForm = document.getElementById('registerForm');
-            const registerButton = document.getElementById('registerButton');
-            const loadingSpinner = document.getElementById('loadingSpinner');
-
-            registerForm.addEventListener('submit', async function (e) {
-                e.preventDefault();
-
-                // フォーム入力値の取得
-                const username = document.getElementById('username').value.trim();
-                const password = document.getElementById('password').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-                const locationName = document.getElementById('locationName').value.trim();
-                const startTime = document.getElementById('startTime').value;
-                const endTime = document.getElementById('endTime').value;
-
-                // バリデーション
-                if (!username || !password || !confirmPassword || !locationName || !startTime || !endTime) {
-                    showError("すべてのフィールドを入力してください");
-                    return;
-                }
-
-                if (password !== confirmPassword) {
-                    showError("パスワードが一致しません");
-                    return;
-                }
-
-                try {
-                    // 登録処理中の表示
-                    toggleLoading(true);
-
-                    // ユーザー登録API呼び出し
-                    const userResponse = await fetch('/api/auth/signup', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            username: username,
-                            password: password,
-							startTime:startTime,
-							startTime:startTime
-                        })
-                    });
-
-                    // ユーザー登録エラー処理
-                    if (!userResponse.ok) {
-                        const errorData = await userResponse.json().catch(() => null);
-                        if (errorData && errorData.message) {
-                            showError(errorData.message);
-                        } else {
-                            showError(`ユーザー登録に失敗しました (${userResponse.status})`);
-                        }
-                        toggleLoading(false);
-                        return;
-                    }
-
-                    // ユーザー情報を取得
-                    const userData = await userResponse.json();
-                    
-                    // ローカルストレージにユーザー情報を保存
-                    localStorage.setItem('userId', userData.userId);
-                    localStorage.setItem('username', userData.username);
-
-                    // ロケーション登録API呼び出し
-                    const locationResponse = await fetch('/api/locations', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${userData.token}` // トークンがある場合
-                        },
-                        body: JSON.stringify({
-                            name: locationName,
-                            startTime: startTime,
-                            endTime: endTime
-                        })
-                    });
-
-                    // ロケーション登録エラー処理
-                    if (!locationResponse.ok) {
-                        console.error('ロケーション登録エラー:', locationResponse.status);
-                        // ロケーション登録は失敗してもユーザー登録は完了しているので、リダイレクトする
-                        window.location.href = "index.html";
-                        return;
-                    }
-
-                    // ロケーション情報を取得
-                    const locationData = await locationResponse.json();
-
-                    // ユーザーとロケーションを関連付けるAPI呼び出し
-                    try {
-                        await fetch(`/api/users/${userData.userId}/location/${locationData.id}`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${userData.token}` // トークンがある場合
-                            }
-                        });
-                    } catch (linkError) {
-                        console.error('ユーザーとロケーションの関連付けエラー:', linkError);
-                        // 関連付けエラーでも登録自体は完了しているのでリダイレクト
-                    }
-
-                    // 登録成功、ダッシュボードへリダイレクト
-                    window.location.href = "index.html";
-
-                } catch (error) {
-                    console.error('サーバー通信エラー:', error);
-                    showError("サーバーとの通信中にエラーが発生しました。時間をおいて再度お試しください。");
-                    toggleLoading(false);
-                }
-            });
-
-            // エラーメッセージ表示関数
-            function showError(message) {
-                const errorElement = document.getElementById('errorMessage');
-                if (errorElement) {
-                    errorElement.textContent = message;
-                    errorElement.style.display = 'block';
-                    
-                    // 5秒後に非表示
-                    setTimeout(() => {
-                        errorElement.style.display = 'none';
-                    }, 5000);
-                } else {
-                    // 要素がない場合はアラートで表示
-                    alert(message);
-                }
+            if (password !== confirmPassword) {
+                showError("パスワードが一致しません");
+                return;
             }
 
-            // ローディング表示切り替え
-            function toggleLoading(isLoading) {
-                if (registerButton && loadingSpinner) {
-                    if (isLoading) {
-                        registerButton.style.display = 'none';
-                        loadingSpinner.style.display = 'block';
-                        // 入力フィールドを無効化
-                        const inputs = registerForm.querySelectorAll('input');
-                        inputs.forEach(input => input.disabled = true);
-                    } else {
-                        registerButton.style.display = 'block';
-                        loadingSpinner.style.display = 'none';
-                        // 入力フィールドを有効化
-                        const inputs = registerForm.querySelectorAll('input');
-                        inputs.forEach(input => input.disabled = false);
-                    }
+            try {
+                toggleLoading(true);
+
+                const userResponse = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        location: locationName,
+                        startTime: startTime,
+                        endTime: endTime
+                    })
+                });
+
+                if (!userResponse.ok) {
+                    const errorData = await userResponse.json().catch(() => null);
+                    showError(errorData?.message || `ユーザー登録に失敗しました (${userResponse.status})`);
+                    toggleLoading(false);
+                    return;
                 }
+
+                const userData = await userResponse.json();
+                localStorage.setItem('userId', userData.userId);
+                localStorage.setItem('username', userData.username);
+
+                const locationResponse = await fetch('/api/locations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userData.token}`
+                    },
+                    body: JSON.stringify({
+                        name: locationName,
+                        startTime: startTime,
+                        endTime: endTime
+                    })
+                });
+
+                if (!locationResponse.ok) {
+                    console.error('ロケーション登録エラー:', locationResponse.status);
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                const locationData = await locationResponse.json();
+
+                await fetch(`/api/users/${userData.userId}/location/${locationData.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${userData.token}`
+                    }
+                });
+
+                window.location.href = "index.html";
+
+            } catch (error) {
+                console.error('サーバー通信エラー:', error);
+                showError("サーバーとの通信中にエラーが発生しました。時間をおいて再度お試しください。");
+                toggleLoading(false);
             }
         });
-    </script>
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+
+        function toggleLoading(isLoading) {
+            if (registerButton && loadingSpinner) {
+                registerButton.style.display = isLoading ? 'none' : 'block';
+                loadingSpinner.style.display = isLoading ? 'block' : 'none';
+                const inputs = registerForm.querySelectorAll('input');
+                inputs.forEach(input => input.disabled = isLoading);
+            }
+        }
+    });
+</script>
 </body>
 </html>

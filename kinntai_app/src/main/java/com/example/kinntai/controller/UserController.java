@@ -39,4 +39,11 @@ public class UserController {
 			return ResponseEntity.badRequest().build();
 		}
 	}
+
+	@GetMapping("/{userId}/info")
+	public ResponseEntity<UserLocationResponse> getUserInfoDetails(@PathVariable Long userId) {
+		UserLocationResponse response = userService.getUserLocationInfo(userId);
+		return ResponseEntity.ok(response);
+
+	}
 }

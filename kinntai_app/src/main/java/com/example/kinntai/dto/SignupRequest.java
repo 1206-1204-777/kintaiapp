@@ -8,6 +8,7 @@ import lombok.Data;
 public class SignupRequest {
     private String username;
     private String password;
+    private String location;
     private LocalTime startTime;
     private LocalTime endTime;
 }

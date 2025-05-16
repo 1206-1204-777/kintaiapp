@@ -161,7 +161,7 @@
 		<!-- 今日の勤怠セクション -->
 		<div class="section">
 		    <h2>今日の勤怠</h2>
-		    <p><strong>定時時刻:</strong> <span id="scheduledTime">10:00〜19:00</span></p>
+		    <p><strong>定時時刻:</strong> <span id="scheduledTime">-</span></p>
 		    <p><strong>出勤時刻:</strong> <span id="todayClockIn">-</span></p>
 		    <p><strong>退勤時刻:</strong> <span id="todayClockOut">-</span></p>
 		    <p><strong>勤務時間:</strong> <span id="todayWorkHours">-</span></p>
@@ -199,48 +199,42 @@
 
     <script>
         // 認証チェック
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                // ローカルストレージからユーザー情報を取得
-                const userId = localStorage.getItem('userId');
-                const username = localStorage.getItem('username');
-                
-                if (!userId || !username) {
-                    // 未ログインの場合はログインページにリダイレクト
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                // ユーザー名表示
-                const userDisplayElement = document.getElementById('userDisplay');
-                if (userDisplayElement) {
-                    userDisplayElement.textContent = username;
-                } else {
-                    console.error('要素が見つかりません: userDisplay');
-                }
-                
-                // 現在時刻の更新
-                updateClock();
-                setInterval(updateClock, 1000);
-                
-                // 初期データ読み込み
-                loadTodayAttendance();
-                loadAttendanceHistory(getCurrentMonth());
-                checkAttendanceStatus();
-                
-                // 初期月次セレクタ設定
-                const monthSelectElement = document.getElementById('monthSelect');
-                if (monthSelectElement) {
-                    monthSelectElement.value = getCurrentMonth();
-                }
-                
-                // イベントリスナー設定
-                setupEventListeners();
-            } catch (error) {
-                console.error('初期化エラー:', error);
-                alert('ページの初期化中にエラーが発生しました。ページをリロードしてください。');
-            }
-        });
+		document.addEventListener('DOMContentLoaded', function() {
+		    try {
+		        const userId = localStorage.getItem('userId');
+		        const username = localStorage.getItem('username');
+
+		        if (!userId || !username) {
+		            window.location.href = 'login.html';
+		            return;
+		        }
+
+		        const userDisplayElement = document.getElementById('userDisplay');
+		        if (userDisplayElement) {
+		            userDisplayElement.textContent = username;
+		        }
+
+		        updateClock();
+		        setInterval(updateClock, 1000);
+
+		        // 初期データ読み込み
+		        loadTodayAttendance();
+		        loadAttendanceHistory(getCurrentMonth());
+		        checkAttendanceStatus();
+		        loadScheduledTime(); // ← ★ここを追加
+
+		        const monthSelectElement = document.getElementById('monthSelect');
+		        if (monthSelectElement) {
+		            monthSelectElement.value = getCurrentMonth();
+		        }
+
+		        setupEventListeners();
+		    } catch (error) {
+		        console.error('初期化エラー:', error);
+		        alert('ページの初期化中にエラーが発生しました。ページをリロードしてください。');
+		    }
+		});
+
         
         // 現在時刻更新
         function updateClock() {
@@ -569,6 +563,35 @@
                 }
             }
         }
+		
+		function formatLocalTime(timeStr) {
+		    if (!timeStr) return '-';
+		    try {
+		        const [hour, minute] = timeStr.split(':');
+		        return `${hour}:${minute}`;
+		    } catch (e) {
+		        console.error('ローカル時刻フォーマットエラー:', e);
+		        return '-';
+		    }
+		}
+
+		
+		// 定時時刻の取得
+		async function loadScheduledTime() {
+		    try {	
+		        const userId = localStorage.getItem('userId');
+		        const response = await fetch(`/api/users/${userId}/info`);
+		        if (response.ok) {
+		            const data = await response.json();
+		            const start = data.startTime ? formatLocalTime(data.startTime) : '-';
+		            const end = data.endTime ? formatLocalTime(data.endTime) : '-';
+		            document.getElementById('scheduledTime').textContent = `${start} ～ ${end}`;
+		        }
+		    } catch (e) {
+		        console.error('定時時刻取得エラー:', e);
+		    }
+		}
+
 
         // イベントリスナーの設定
         function setupEventListeners() {

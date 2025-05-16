@@ -131,6 +131,17 @@ public class AttendanceService {
 		}
 	}
 
+	//退勤していないユーザーのリスト作成
+	public List<AttendanceResponse> getUnclockedUsersToday() throws RuntimeException {
+		LocalDate today = LocalDate.now();
+		List<Attendance> attendanses = attendanceRepository.findClicksedOutToday(today);
+
+		return attendanses.stream()
+				.map(AttendanceResponse::fromEntity)
+
+				.collect(Collectors.toList());
+	}
+
 	/**
 	 * 特定の日の勤怠情報を取得
 	 */
@@ -219,13 +230,13 @@ public class AttendanceService {
 				.collect(Collectors.toList());
 
 	}
-	
-		public List<AttendanceResponse> getAttendanceUser(Long userId){
-	
-			return attendanceRepository.findByUserId(userId)
-					.stream()
-					.map(AttendanceResponse :: fromEntity)
-					.collect(Collectors.toList());
-			
-		}
+
+	public List<AttendanceResponse> getAttendanceUser(Long userId) {
+
+		return attendanceRepository.findByUserId(userId)
+				.stream()
+				.map(AttendanceResponse::fromEntity)
+				.collect(Collectors.toList());
+
+	}
 }
