@@ -134,7 +134,7 @@ public class AttendanceService {
 	//退勤していないユーザーのリスト作成
 	public List<AttendanceResponse> getUnclockedUsersToday() throws RuntimeException {
 		LocalDate today = LocalDate.now();
-		List<Attendance> attendanses = attendanceRepository.findClicksedOutToday(today);
+		List<Attendance> attendanses = attendanceRepository.findClickedOutToday(today);
 
 		return attendanses.stream()
 				.map(AttendanceResponse::fromEntity)

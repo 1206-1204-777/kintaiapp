@@ -26,7 +26,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     
     /*退勤していないユーザーを見つける*/
     @Query("SELECT a FROM Attendance a WHERE a.date = :today AND a.clockIn IS NOT NULL AND a.clockOut IS NULL")
-    List<Attendance>findClicksedOutToday(@Param ("today") LocalDate teday);
+    List<Attendance>findClickedOutToday(@Param ("today") LocalDate today);
 
 	List<Attendance> findByUserId(Long userId);
 }

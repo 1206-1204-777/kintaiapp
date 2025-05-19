@@ -22,7 +22,7 @@ public class AttendanceAlert {
 	public void notifyUnclickedOutUsers() {
 		LocalDate today = LocalDate.now();
 
-		List<Attendance> targets = attendanceRepository.findClicksedOutToday(today);
+		List<Attendance> targets = attendanceRepository.findClickedOutToday(today);
 		//List <Attendance> a =  
 			//User user = a.getUser();
 			service.sendUnclockedOutAlert(targets);
