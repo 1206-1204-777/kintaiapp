@@ -4,22 +4,23 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.example.kinntai.entity.Holiday;
 import com.example.kinntai.entity.User;
 import com.example.kinntai.repository.HolidayRepository;
 import com.example.kinntai.service.HolidayService;
 
-public class HolidayServiceImpl implements HolidayService{
+@Service
+public class HolidayServiceImpl implements HolidayService {
 
 	@Autowired
 	private HolidayRepository holidayRepository;
-	
-	
+
 	@Override
 	public Holiday registerHoliday(Holiday holiday) {
-		// TODO 自動生成されたメソッド・スタブ
-		return null;
+		Holiday registerHoliday = holidayRepository.save(holiday);
+		return registerHoliday;
 	}
 
 	@Override
