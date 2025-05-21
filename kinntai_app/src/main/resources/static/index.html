@@ -58,12 +58,19 @@
         }
         .button-container {
             display: flex;
-            gap: 20px;
+            gap: 10px;
+            flex-wrap: wrap;
             margin-top: 15px;
+            justify-content: center;
+        }
+        .button-container button {
+             padding: 10px 20px;
+             font-size: 15px;
+             flex-grow: 1;
+             min-width: 120px;
+             max-width: 180px;
         }
         button {
-            padding: 12px 30px;
-            font-size: 16px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
@@ -84,6 +91,21 @@
         .clock-out-button:hover {
             background-color: #d32f2f;
         }
+         .break-button-start {
+             background-color: #ff9800;
+             color: white;
+         }
+         .break-button-start:hover {
+             background-color: #f57c00;
+         }
+         .break-button-end {
+             background-color: #2196F3;
+             color: white;
+         }
+         .break-button-end:hover {
+             background-color: #1976d2;
+         }
+
         button:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
@@ -117,6 +139,7 @@
         .loading {
             margin-top: 10px;
             color: #666;
+            text-align: center;
         }
         .time-display {
             font-size: 2rem;
@@ -131,6 +154,9 @@
         .status-working {
             color: #4CAF50;
         }
+         .status-breaking {
+             color: #ff9800;
+         }
         .status-off {
             color: #f44336;
         }
@@ -144,7 +170,7 @@
             <button id="logoutBtn" class="logout-btn">ログアウト</button>
         </div>
     </div>
-    
+
     <div class="container">
         <div class="section">
             <h2>打刻</h2>
@@ -154,30 +180,31 @@
             <div class="button-container">
                 <button id="clockInButton" class="clock-in-button">出勤</button>
                 <button id="clockOutButton" class="clock-out-button" disabled>退勤</button>
+                <button id="breakStartButton" class="break-button-start">休憩開始</button>
+                <button id="breakEndButton" class="break-button-end" disabled>休憩終了</button>
             </div>
             <div id="loading" class="loading" style="display: none;">処理中...</div>
         </div>
-        
-		<!-- 今日の勤怠セクション -->
+
 		<div class="section">
 		    <h2>今日の勤怠</h2>
 		    <p><strong>定時時刻:</strong> <span id="scheduledTime">-</span></p>
 		    <p><strong>出勤時刻:</strong> <span id="todayClockIn">-</span></p>
 		    <p><strong>退勤時刻:</strong> <span id="todayClockOut">-</span></p>
 		    <p><strong>勤務時間:</strong> <span id="todayWorkHours">-</span></p>
+            <p><strong>休憩時間合計:</strong> <span id="todayTotalBreakHours">-</span></p>
 		</div>
 
-        </div>
-        
+
         <div class="section">
             <h2>勤怠履歴</h2>
             <div class="month-selector">
                 <label for="monthSelect">月を選択:</label>
                 <input type="month" id="monthSelect">
             </div>
-            
+
             <div id="tableLoading" class="loading" style="display: none;">読み込み中...</div>
-            
+
             <table>
                 <thead>
                     <tr>
@@ -185,12 +212,13 @@
                         <th>出勤時間</th>
                         <th>退勤時間</th>
                         <th>勤務時間</th>
+                         <th>休憩時間合計</th>
                         <th>状態</th>
                     </tr>
                 </thead>
                 <tbody id="attendanceTable">
                     <tr>
-                        <td colspan="5" style="text-align: center;">読み込み中...</td>
+                        <td colspan="6" style="text-align: center;">読み込み中...</td>
                     </tr>
                 </tbody>
             </table>
@@ -220,8 +248,8 @@
 		        // 初期データ読み込み
 		        loadTodayAttendance();
 		        loadAttendanceHistory(getCurrentMonth());
-		        checkAttendanceStatus();
-		        loadScheduledTime(); // ← ★ここを追加
+		        checkAttendanceStatus(); // 勤怠・休憩ステータスチェック
+		        loadScheduledTime();
 
 		        const monthSelectElement = document.getElementById('monthSelect');
 		        if (monthSelectElement) {
@@ -231,11 +259,11 @@
 		        setupEventListeners();
 		    } catch (error) {
 		        console.error('初期化エラー:', error);
-		        alert('ページの初期化中にエラーが発生しました。ページをリロードしてください。');
+		        showError('ページの初期化中にエラーが発生しました。ページをリロードしてください。');
 		    }
 		});
 
-        
+
         // 現在時刻更新
         function updateClock() {
             try {
@@ -249,84 +277,117 @@
                 console.error('時刻更新エラー:', error);
             }
         }
-        
+
         // 現在の年月を取得（YYYY-MM形式）
         function getCurrentMonth() {
             const now = new Date();
             return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         }
-        
+
         // 今日の勤怠情報を読み込む
         async function loadTodayAttendance() {
             try {
                 const userId = localStorage.getItem('userId');
                 if (!userId) return;
-                
+
                 const today = new Date().toISOString().split('T')[0];
-                const response = await fetch(`/api/attendance/${userId}/date/${today}`);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    if (data) {
-                        document.getElementById('todayClockIn').textContent = formatTime(data.clockIn);
-                        document.getElementById('todayClockOut').textContent = formatTime(data.clockOut);
-                        
-                        // 勤務時間計算
-                        if (data.clockIn && data.clockOut) {
-                            const workHours = calculateWorkHours(data.clockIn, data.clockOut);
-                            document.getElementById('todayWorkHours').textContent = workHours;
+                const attendanceResponse = await fetch(`/api/attendance/${userId}/date/${today}`);
+
+                if (attendanceResponse.ok) {
+                    const attendanceData = await attendanceResponse.json();
+
+                    if (attendanceData) {
+                        document.getElementById('todayClockIn').textContent = formatTime(attendanceData.clockIn);
+                        document.getElementById('todayClockOut').textContent = formatTime(attendanceData.clockOut);
+
+                        if (attendanceData.clockIn && attendanceData.clockOut) {
+                             const workHours = calculateWorkHours(attendanceData.clockIn, attendanceData.clockOut);
+                             document.getElementById('todayWorkHours').textContent = workHours;
+                        } else {
+                             document.getElementById('todayWorkHours').textContent = '-';
                         }
+
+                        // 今日の休憩時間合計のAPI呼び出し
+                        try {
+                            const breakTotalResponse = await fetch(`/api/break/total/${userId}/today`);
+                            if(breakTotalResponse.ok) {
+                                const breakTotalData = await breakTotalResponse.json();
+                                if(breakTotalData && breakTotalData.totalMinutes !== undefined && breakTotalData.totalMinutes !== null) {
+                                    document.getElementById('todayTotalBreakHours').textContent = formatMinutesToHoursAndMinutes(breakTotalData.totalMinutes);
+                                } else {
+                                    document.getElementById('todayTotalBreakHours').textContent = '0分';
+                                }
+                            } else {
+                                console.warn('今日の休憩時間合計取得APIエラー:', breakTotalResponse.status, breakTotalResponse.statusText);
+                                document.getElementById('todayTotalBreakHours').textContent = '-';
+                            }
+                        } catch (breakError) {
+                            console.error('今日の休憩時間合計取得エラー:', breakError);
+                            document.getElementById('todayTotalBreakHours').textContent = '-';
+                        }
+                    } else {
+                         document.getElementById('todayClockIn').textContent = '-';
+                         document.getElementById('todayClockOut').textContent = '-';
+                         document.getElementById('todayWorkHours').textContent = '-';
+                         document.getElementById('todayTotalBreakHours').textContent = '-';
                     }
+                } else {
+                    console.error('今日の勤怠データ取得エラー:', attendanceResponse.status, attendanceResponse.statusText);
+                     document.getElementById('todayClockIn').textContent = '-';
+                     document.getElementById('todayClockOut').textContent = '-';
+                     document.getElementById('todayWorkHours').textContent = '-';
+                     document.getElementById('todayTotalBreakHours').textContent = '-';
                 }
             } catch (error) {
                 console.error('今日の勤怠データ取得エラー:', error);
+                 document.getElementById('todayClockIn').textContent = '-';
+                 document.getElementById('todayClockOut').textContent = '-';
+                 document.getElementById('todayWorkHours').textContent = '-';
+                 document.getElementById('todayTotalBreakHours').textContent = '-';
             }
         }
-        
-        // 勤怠履歴を読み込む
+
+        // 勤怠履歴を読み込む (この関数は変更なし)
         async function loadAttendanceHistory(month) {
             try {
                 const userId = localStorage.getItem('userId');
                 if (!userId) return;
-                
+
                 const tableLoadingElement = document.getElementById('tableLoading');
                 if (tableLoadingElement) {
                     tableLoadingElement.style.display = 'block';
                 }
-                
-                // デバッグ情報
+
                 console.log(`勤怠履歴取得: userId=${userId}, month=${month}`);
-                
-                // 修正: ハードコードされたIDを削除し、ログインユーザーのIDを使用
+
                 const response = await fetch(`/api/attendance/monthly/${userId}?month=${month}`);
-                
+
                 if (response.ok) {
                     const data = await response.json();
-                    
+
                     const attendanceTableElement = document.getElementById('attendanceTable');
                     if (!attendanceTableElement) {
                         console.error('要素が見つかりません: attendanceTable');
                         return;
                     }
-                    
+
                     if (data && data.length > 0) {
                         renderAttendanceTable(data);
                     } else {
-                        attendanceTableElement.innerHTML = 
-                            '<tr><td colspan="5" style="text-align: center;">記録がありません</td></tr>';
+                        attendanceTableElement.innerHTML =
+                            '<tr><td colspan="6" style="text-align: center;">記録がありません</td></tr>';
                     }
                 } else {
                     console.error('勤怠履歴APIエラー:', response.status, response.statusText);
-                    document.getElementById('attendanceTable').innerHTML = 
-                        `<tr><td colspan="5" style="text-align: center;">データの取得に失敗しました (${response.status})</td></tr>`;
+                    document.getElementById('attendanceTable').innerHTML =
+                        `<tr><td colspan="6" style="text-align: center;">データの取得に失敗しました (${response.status})</td></tr>`;
                 }
             } catch (error) {
                 console.error('勤怠履歴取得エラー:', error);
                 const attendanceTableElement = document.getElementById('attendanceTable');
                 if (attendanceTableElement) {
-                    attendanceTableElement.innerHTML = 
-                        '<tr><td colspan="5" style="text-align: center;">データの取得に失敗しました</td></tr>';
+                    attendanceTableElement.innerHTML =
+                        '<tr><td colspan="6" style="text-align: center;">データの取得に失敗しました</td></tr>';
                 }
             } finally {
                 const tableLoadingElement = document.getElementById('tableLoading');
@@ -335,8 +396,8 @@
                 }
             }
         }
-        
-        // 勤怠テーブルを描画
+
+        // 勤怠テーブルを描画 (この関数は変更なし)
         function renderAttendanceTable(attendances) {
             try {
                 const tableBody = document.getElementById('attendanceTable');
@@ -344,35 +405,37 @@
                     console.error('要素が見つかりません: attendanceTable');
                     return;
                 }
-                
+
                 tableBody.innerHTML = '';
-                
+
                 attendances.forEach(item => {
                     const row = document.createElement('tr');
-                    
-                    // 日付
+
                     const dateCell = document.createElement('td');
                     const date = new Date(item.date);
                     dateCell.textContent = date.toLocaleDateString('ja-JP');
                     row.appendChild(dateCell);
-                    
-                    // 出勤時間
+
                     const clockInCell = document.createElement('td');
                     clockInCell.textContent = formatTime(item.clockIn);
                     row.appendChild(clockInCell);
-                    
-                    // 退勤時間
+
                     const clockOutCell = document.createElement('td');
                     clockOutCell.textContent = formatTime(item.clockOut);
                     row.appendChild(clockOutCell);
-                    
-                    // 勤務時間
+
                     const workHoursCell = document.createElement('td');
-                    workHoursCell.textContent = item.clockIn && item.clockOut ? 
-                        calculateWorkHours(item.clockIn, item.clockOut) : '-';
+                    workHoursCell.textContent = item.workHours !== undefined && item.workHours !== null ?
+                                                  formatMinutesToHoursAndMinutes(item.workHours) :
+                                                  (item.clockIn && item.clockOut ? calculateWorkHours(item.clockIn, item.clockOut) : '-');
                     row.appendChild(workHoursCell);
-                    
-                    // 状態
+
+                    const totalBreakHoursCell = document.createElement('td');
+                    totalBreakHoursCell.textContent = item.totalBreakMinutes !== undefined && item.totalBreakMinutes !== null ?
+                                                      formatMinutesToHoursAndMinutes(item.totalBreakMinutes) : '-';
+                    row.appendChild(totalBreakHoursCell);
+
+
                     const statusCell = document.createElement('td');
                     if (item.clockIn && item.clockOut) {
                         statusCell.innerHTML = '<span style="color: #4CAF50;">完了</span>';
@@ -382,169 +445,170 @@
                         statusCell.innerHTML = '<span style="color: #6c757d;">未打刻</span>';
                     }
                     row.appendChild(statusCell);
-                    
+
                     tableBody.appendChild(row);
                 });
             } catch (error) {
                 console.error('テーブル描画エラー:', error);
             }
         }
-        
+
         // 勤怠状態を確認する
         async function checkAttendanceStatus() {
             try {
                 const userId = localStorage.getItem('userId');
                 if (!userId) return;
-                
-                const today = new Date().toISOString().split('T')[0];
-                const response = await fetch(`/api/attendance/${userId}/status`);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    const statusElement = document.getElementById('attendanceStatus');
-                    const clockInBtn = document.getElementById('clockInButton');
-                    const clockOutBtn = document.getElementById('clockOutButton');
-                    
-                    if (!statusElement || !clockInBtn || !clockOutBtn) {
-                        console.error('勤怠状態UI要素が見つかりません');
-                        return;
-                    }
-                    
-                    if (data.working) {
-                        statusElement.textContent = '勤務中';
-                        statusElement.className = 'attendance-status status-working';
-                        clockInBtn.disabled = true;
-                        clockOutBtn.disabled = false;
-                    } else {
-                        statusElement.textContent = '退勤中';
-                        statusElement.className = 'attendance-status status-off';
-                        clockInBtn.disabled = false;
-                        clockOutBtn.disabled = true;
-                    }
+
+                const statusElement = document.getElementById('attendanceStatus');
+                const clockInBtn = document.getElementById('clockInButton');
+                const clockOutBtn = document.getElementById('clockOutButton');
+                const breakStartBtn = document.getElementById('breakStartButton');
+                const breakEndBtn = document.getElementById('breakEndButton');
+
+                if (!statusElement || !clockInBtn || !clockOutBtn || !breakStartBtn || !breakEndBtn) {
+                    console.error('勤怠状態UI要素が見つかりません');
+                    // エラー時は全ての打刻ボタンを無効化
+                    if (clockInBtn) clockInBtn.disabled = true;
+                    if (clockOutBtn) clockOutBtn.disabled = true;
+                    if (breakStartBtn) breakStartBtn.disabled = true;
+                    if (breakEndBtn) breakEndBtn.disabled = true;
+                    return;
                 }
+
+                // デフォルトで全てのボタンを無効化しておく
+                clockInBtn.disabled = true;
+                clockOutBtn.disabled = true;
+                breakStartBtn.disabled = true;
+                breakEndBtn.disabled = true;
+                statusElement.textContent = '状態確認中...';
+                statusElement.className = 'attendance-status'; // クラスをリセット
+
+                let isWorking = false;
+                let isOngoingBreak = false;
+
+                // 勤怠ステータスAPIの呼び出しと処理
+                try {
+                    const attendanceStatusResponse = await fetch(`/api/attendance/${userId}/status`);
+                    if (attendanceStatusResponse.ok) {
+                        const attendanceStatusData = await attendanceStatusResponse.json();
+                        isWorking = attendanceStatusData.working;
+                    } else {
+                        console.warn('勤怠状態確認APIエラー:', attendanceStatusResponse.status, attendanceStatusResponse.statusText);
+                        // エラーが発生しても、このAPIの結果のみでボタン状態を制御せず、次の休憩ステータスに進む
+                    }
+                } catch (error) {
+                    console.error('勤怠状態確認エラー (fetch):', error);
+                }
+
+                // 休憩ステータスAPIの呼び出しと処理
+                try {
+                    const breakStatusResponse = await fetch(`/api/break/status/${userId}/today`);
+                    if (breakStatusResponse.ok) {
+                        const breakStatusData = await breakStatusResponse.json();
+                        isOngoingBreak = breakStatusData.ongoingBreak;
+                    } else {
+                        console.warn('休憩状態確認APIエラー:', breakStatusResponse.status, breakStatusResponse.statusText);
+                        // エラーが発生しても、このAPIの結果のみでボタン状態を制御せず、次のロジックに進む
+                    }
+                } catch (error) {
+                    console.error('休憩状態確認エラー (fetch):', error);
+                }
+
+                // APIの結果に基づいてボタンの有効/無効を決定
+                if (isOngoingBreak) { // 休憩中の場合
+                    statusElement.textContent = '休憩中';
+                    statusElement.className = 'attendance-status status-breaking';
+                    // clockInBtn.disabled = true; // 既にデフォルトで無効
+                    // clockOutBtn.disabled = true; // 既にデフォルトで無効
+                    // breakStartBtn.disabled = true; // 既にデフォルトで無効
+                    breakEndBtn.disabled = false; // 休憩中は休憩終了できる
+                } else if (isWorking) { // 勤務中の場合 (休憩中でない)
+                    statusElement.textContent = '勤務中';
+                    statusElement.className = 'attendance-status status-working';
+                    // clockInBtn.disabled = true; // 既にデフォルトで無効
+                    clockOutBtn.disabled = false;
+                    breakStartBtn.disabled = false; // 勤務中なら休憩開始できる
+                    // breakEndBtn.disabled = true; // 既にデフォルトで無効
+                } else { // 退勤済み、または未出勤の場合
+                    statusElement.textContent = '退勤中'; // もしくは「未出勤」
+                    statusElement.className = 'attendance-status status-off';
+                    clockInBtn.disabled = false; // 出勤ボタン有効
+                    // clockOutBtn.disabled = true; // 既にデフォルトで無効
+                    // breakStartBtn.disabled = true; // 既にデフォルトで無効
+                    // breakEndBtn.disabled = true; // 既にデフォルトで無効
+                }
+
             } catch (error) {
-                console.error('勤怠状態確認エラー:', error);
-                // エラー時のフォールバック
+                console.error('勤怠状態確認エラー (最終catch):', error);
                 const statusElement = document.getElementById('attendanceStatus');
                 if (statusElement) {
                     statusElement.textContent = 'ステータス取得エラー';
+                    statusElement.className = 'attendance-status';
                 }
+                // 何か予期せぬエラーが発生した場合、全てのボタンを無効にする
+                const clockInBtn = document.getElementById('clockInButton');
+                const clockOutBtn = document.getElementById('clockOutButton');
+                const breakStartBtn = document.getElementById('breakStartButton');
+                const breakEndBtn = document.getElementById('breakEndButton');
+                if (clockInBtn) clockInBtn.disabled = true;
+                if (clockOutBtn) clockOutBtn.disabled = true;
+                if (breakStartBtn) breakStartBtn.disabled = true;
+                if (breakEndBtn) breakEndBtn.disabled = true;
             }
         }
-        
+
         // 出勤処理
         async function clockIn() {
-            try {
-                const userId = localStorage.getItem('userId');
-                if (!userId) return;
-                
-                const loadingElement = document.getElementById('loading');
-                if (loadingElement) {
-                    loadingElement.style.display = 'block';
-                }
-                
-                const response = await fetch(`/api/attendance/clock-in/${userId}`, {
-                    method: 'POST'
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // UI更新
-                    const todayClockInElement = document.getElementById('todayClockIn');
-                    if (todayClockInElement) {
-                        todayClockInElement.textContent = formatTime(data.clockIn);
-                    }
-                    
-                    const statusElement = document.getElementById('attendanceStatus');
-                    if (statusElement) {
-                        statusElement.textContent = '勤務中';
-                        statusElement.className = 'attendance-status status-working';
-                    }
-                    
-                    const clockInBtn = document.getElementById('clockInButton');
-                    const clockOutBtn = document.getElementById('clockOutButton');
-                    if (clockInBtn) clockInBtn.disabled = true;
-                    if (clockOutBtn) clockOutBtn.disabled = false;
-                    
-                    showSuccess('出勤打刻が完了しました');
-                    
-                    // 勤怠履歴を更新
-                    const monthSelectElement = document.getElementById('monthSelect');
-                    if (monthSelectElement) {
-                        loadAttendanceHistory(monthSelectElement.value);
-                    }
-                } else {
-                    const errorData = await response.json().catch(() => null);
-                    if (errorData && errorData.message) {
-                        showError(errorData.message);
-                    } else {
-                        showError('出勤打刻に失敗しました');
-                    }
-                }
-            } catch (error) {
-                console.error('出勤打刻エラー:', error);
-                showError('サーバーとの通信中にエラーが発生しました');
-            } finally {
-                const loadingElement = document.getElementById('loading');
-                if (loadingElement) {
-                    loadingElement.style.display = 'none';
-                }
-            }
+             try {
+                 const userId = localStorage.getItem('userId');
+                 if (!userId) return;
+
+                 showLoading(true);
+                 showError(''); // 既存のエラーメッセージをクリア
+
+                 const response = await fetch(`/api/attendance/clock-in/${userId}`, {
+                     method: 'POST'
+                 });
+
+                 if (response.ok) {
+                     showSuccess('出勤打刻が完了しました');
+                     loadTodayAttendance();
+                     loadAttendanceHistory(getCurrentMonth());
+                     checkAttendanceStatus();
+                 } else {
+                     const errorData = await response.json().catch(() => null);
+                     if (errorData && errorData.message) {
+                         showError(errorData.message);
+                     } else {
+                         showError('出勤打刻に失敗しました');
+                     }
+                 }
+             } catch (error) {
+                 console.error('出勤打刻エラー:', error);
+                 showError('サーバーとの通信中にエラーが発生しました');
+             } finally {
+                 showLoading(false);
+             }
         }
-        
+
         // 退勤処理
         async function clockOut() {
             try {
                 const userId = localStorage.getItem('userId');
                 if (!userId) return;
-                
-                const loadingElement = document.getElementById('loading');
-                if (loadingElement) {
-                    loadingElement.style.display = 'block';
-                }
-                
+
+                showLoading(true);
+                showError(''); // 既存のエラーメッセージをクリア
+
                 const response = await fetch(`/api/attendance/clock-out/${userId}`, {
                     method: 'POST'
                 });
-                
+
                 if (response.ok) {
-                    const data = await response.json();
-                    
-                    // UI更新
-                    const todayClockOutElement = document.getElementById('todayClockOut');
-                    if (todayClockOutElement) {
-                        todayClockOutElement.textContent = formatTime(data.clockOut);
-                    }
-                    
-                    // 勤務時間計算
-                    if (data.clockIn && data.clockOut) {
-                        const workHours = calculateWorkHours(data.clockIn, data.clockOut);
-                        const todayWorkHoursElement = document.getElementById('todayWorkHours');
-                        if (todayWorkHoursElement) {
-                            todayWorkHoursElement.textContent = workHours;
-                        }
-                    }
-                    
-                    const statusElement = document.getElementById('attendanceStatus');
-                    if (statusElement) {
-                        statusElement.textContent = '退勤中';
-                        statusElement.className = 'attendance-status status-off';
-                    }
-                    
-                    const clockInBtn = document.getElementById('clockInButton');
-                    const clockOutBtn = document.getElementById('clockOutButton');
-                    if (clockInBtn) clockInBtn.disabled = false;
-                    if (clockOutBtn) clockOutBtn.disabled = true;
-                    
                     showSuccess('退勤打刻が完了しました');
-                    
-                    // 勤怠履歴を更新
-                    const monthSelectElement = document.getElementById('monthSelect');
-                    if (monthSelectElement) {
-                        loadAttendanceHistory(monthSelectElement.value);
-                    }
+                    loadTodayAttendance();
+                    loadAttendanceHistory(getCurrentMonth());
+                    checkAttendanceStatus();
                 } else {
                     const errorData = await response.json().catch(() => null);
                     if (errorData && errorData.message) {
@@ -557,28 +621,110 @@
                 console.error('退勤打刻エラー:', error);
                 showError('サーバーとの通信中にエラーが発生しました');
             } finally {
-                const loadingElement = document.getElementById('loading');
-                if (loadingElement) {
-                    loadingElement.style.display = 'none';
-                }
+                showLoading(false);
             }
         }
-		
+
+        async function startBreak() {
+            try {
+                const userId = localStorage.getItem('userId');
+                if (!userId) return;
+
+                showLoading(true);
+                showError(''); // 既存のエラーメッセージをクリア
+
+                const response = await fetch(`/api/break/start/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    showSuccess('休憩開始を打刻しました');
+                    loadTodayAttendance();
+                    loadAttendanceHistory(getCurrentMonth());
+                    checkAttendanceStatus(); // 成功した場合のみUIを更新
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    if (errorData && errorData.message) {
+                        showError(errorData.message);
+                    } else {
+                        showError(`休憩開始に失敗しました (${response.status})`);
+                    }
+                    checkAttendanceStatus(); // エラーの場合もUIをリフレッシュ
+                }
+            } catch (error) {
+                console.error('休憩開始打刻エラー:', error);
+                showError('サーバーとの通信中にエラーが発生しました');
+                checkAttendanceStatus(); // エラーの場合もUIをリフレッシュ
+            } finally {
+                showLoading(false);
+            }
+        }
+
+       async function endBreak() {
+            try {
+                const userId = localStorage.getItem('userId');
+                if (!userId) return;
+
+                showLoading(true);
+                showError(''); // 既存のエラーメッセージをクリア
+
+                const response = await fetch(`/api/break/end/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    showSuccess('休憩終了を打刻しました');
+                    loadTodayAttendance();
+                    loadAttendanceHistory(getCurrentMonth());
+                    checkAttendanceStatus(); // 成功した場合のみUIを更新
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    if (errorData && errorData.message) {
+                        showError(errorData.message);
+                    } else {
+                        showError(`休憩終了に失敗しました (${response.status})`);
+                    }
+                    checkAttendanceStatus(); // エラーの場合もUIをリフレッシュ
+                }
+            } catch (error) {
+                console.error('休憩終了打刻エラー:', error);
+                showError('サーバーとの通信中にエラーが発生しました');
+                checkAttendanceStatus(); // エラーの場合もUIをリフレッシュ
+            } finally {
+                showLoading(false);
+            }
+        }
+
+
 		function formatLocalTime(timeStr) {
 		    if (!timeStr) return '-';
+
 		    try {
-		        const [hour, minute] = timeStr.split(':');
-		        return `${hour}:${minute}`;
+                const date = new Date(timeStr);
+                if (isNaN(date.getTime())) {
+                    const parts = timeStr.split(':');
+                    if (parts.length >= 2) {
+                         return `${parts[0]}:${parts[1]}`;
+                    }
+                    return timeStr;
+                }
+                return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
 		    } catch (e) {
 		        console.error('ローカル時刻フォーマットエラー:', e);
 		        return '-';
 		    }
 		}
 
-		
-		// 定時時刻の取得
+		// 定時時刻の取得 (この関数は変更なし)
 		async function loadScheduledTime() {
-		    try {	
+		    try {
 		        const userId = localStorage.getItem('userId');
 		        const response = await fetch(`/api/users/${userId}/info`);
 		        if (response.ok) {
@@ -586,47 +732,55 @@
 		            const start = data.startTime ? formatLocalTime(data.startTime) : '-';
 		            const end = data.endTime ? formatLocalTime(data.endTime) : '-';
 		            document.getElementById('scheduledTime').textContent = `${start} ～ ${end}`;
-		        }
+		        } else {
+                    console.error('定時時刻取得APIエラー:', response.status, response.statusText);
+                     document.getElementById('scheduledTime').textContent = '-';
+                }
 		    } catch (e) {
 		        console.error('定時時刻取得エラー:', e);
+                document.getElementById('scheduledTime').textContent = '-';
 		    }
 		}
 
 
-        // イベントリスナーの設定
+        // イベントリスナーの設定 (この関数は変更なし)
         function setupEventListeners() {
             try {
-                // 出勤ボタン
                 const clockInButton = document.getElementById('clockInButton');
                 if (clockInButton) {
                     clockInButton.addEventListener('click', clockIn);
                 }
-                
-                // 退勤ボタン
+
                 const clockOutButton = document.getElementById('clockOutButton');
                 if (clockOutButton) {
                     clockOutButton.addEventListener('click', clockOut);
                 }
-                
-                // 月選択
+
+                const breakStartButton = document.getElementById('breakStartButton');
+                if (breakStartButton) {
+                    breakStartButton.addEventListener('click', startBreak);
+                }
+
+                const breakEndButton = document.getElementById('breakEndButton');
+                if (breakEndButton) {
+                    breakEndButton.addEventListener('click', endBreak);
+                }
+
                 const monthSelectElement = document.getElementById('monthSelect');
                 if (monthSelectElement) {
                     monthSelectElement.addEventListener('change', function() {
                         loadAttendanceHistory(this.value);
                     });
                 }
-                
-                // ログアウトボタン
+
                 const logoutBtn = document.getElementById('logoutBtn');
                 if (logoutBtn) {
                     logoutBtn.addEventListener('click', function(e) {
                         e.preventDefault();
-                        
-                        // ローカルストレージをクリア
+
                         localStorage.removeItem('userId');
                         localStorage.removeItem('username');
-                        
-                        // ログインページにリダイレクト
+
                         window.location.href = 'login.html';
                     });
                 }
@@ -634,49 +788,69 @@
                 console.error('イベントリスナー設定エラー:', error);
             }
         }
-        
+
         // ユーティリティ関数
         function formatTime(timeStr) {
-            if (!timeStr) return '-';
-            
-            try {
-                const date = new Date(timeStr);
-                return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-            } catch (e) {
-                console.error('時刻フォーマットエラー:', e);
-                return '-';
-            }
-        }
-        
-        function calculateWorkHours(startTime, endTime) {
-            if (!startTime || !endTime) return '-';
-            
-            try {
-                const start = new Date(startTime).getTime();
-                const end = new Date(endTime).getTime();
-                const diffMs = end - start;
-                
-                if (isNaN(diffMs) || diffMs < 0) return '-';
-                
-                // ミリ秒を時間と分に変換
-                const hours = Math.floor(diffMs / (1000 * 60 * 60));
-                const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                
-                return `${hours}時間${minutes}分`;
-            } catch (e) {
-                console.error('勤務時間計算エラー:', e);
-                return '-';
-            }
-        }
-        
+             if (!timeStr) return '-';
+
+             try {
+                 const date = new Date(timeStr);
+                 if (isNaN(date.getTime())) {
+                     const parts = timeStr.split(':');
+                     if (parts.length >= 2) {
+                          return `${parts[0]}:${parts[1]}`;
+                     }
+                     return timeStr;
+                 }
+                 return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+             } catch (e) {
+                 console.error('時刻フォーマットエラー:', e);
+                 return '-';
+             }
+         }
+
+         function calculateWorkHours(startTime, endTime) {
+             if (!startTime || !endTime) return '-';
+
+             try {
+                 const start = new Date(startTime).getTime();
+                 const end = new Date(endTime).getTime();
+                 const diffMs = end - start;
+
+                 if (isNaN(diffMs) || diffMs < 0) return '-';
+
+                 const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                 const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+                 return `${hours}時間${minutes}分`;
+             } catch (e) {
+                 console.error('勤務時間計算エラー:', e);
+                 return '-';
+             }
+         }
+
+         function formatMinutesToHoursAndMinutes(totalMinutes) {
+              if (totalMinutes === undefined || totalMinutes === null || isNaN(totalMinutes)) return '-';
+              if (totalMinutes < 0) totalMinutes = 0;
+
+              const hours = Math.floor(totalMinutes / 60);
+              const minutes = totalMinutes % 60;
+
+              if (hours === 0 && minutes === 0) return '0分';
+              if (hours === 0) return `${minutes}分`;
+              if (minutes === 0) return `${hours}時間`;
+              return `${hours}時間${minutes}分`;
+         }
+
+
         function showError(message) {
             try {
                 const errorElement = document.getElementById('errorMessage');
                 if (errorElement) {
                     errorElement.textContent = message;
                     errorElement.style.display = 'block';
-                    
-                    // 5秒後にエラーメッセージを非表示にする
+
                     setTimeout(() => {
                         errorElement.style.display = 'none';
                     }, 5000);
@@ -689,16 +863,22 @@
                 alert(message);
             }
         }
-        
+
         function showSuccess(message) {
-            // アラートでメッセージを表示
             alert(message);
         }
-        
-        // グローバルエラーハンドラ
+
         window.addEventListener('error', function(event) {
             console.error('グローバルエラー:', event.error);
         });
+
+        // showLoading 関数の定義
+        function showLoading(isLoading) {
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.style.display = isLoading ? 'block' : 'none';
+            }
+        }
     </script>
 </body>
 </html>
