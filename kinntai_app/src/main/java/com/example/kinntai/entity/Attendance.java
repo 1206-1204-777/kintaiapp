@@ -24,35 +24,41 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Attendance {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-    
-    @Column(nullable = false)
-    private LocalDate date;
-    
-    @Column(name = "clock_in")
-    private LocalDateTime clockIn;
-    
-    @Column(name = "clock_out")
-    private LocalDateTime clockOut;
-    
-    // 追加：created_at カラムの定義
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-    
-    // 追加：updated_at カラムの定義
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-    
-    public Attendance(User user, LocalDate date) {
-        this.user = user;
-        this.date = date;
-    }
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@ManyToOne
+	@JoinColumn(name = "user_id", nullable = false)
+	private User user;
+
+	@Column(nullable = false)
+	private LocalDate date;
+
+	@Column(name = "clock_in")
+	private LocalDateTime clockIn;
+
+	@Column(name = "clock_out")
+	private LocalDateTime clockOut;
+
+	// 追加：created_at カラムの定義
+	@CreationTimestamp
+	@Column(name = "created_at", nullable = false, updatable = false)
+	private LocalDateTime createdAt;
+
+	// 追加：updated_at カラムの定義
+	@UpdateTimestamp
+	@Column(name = "updated_at")
+	private LocalDateTime updatedAt;
+	@Column(name = "total_work_min") // データベースのカラム名に合わせる
+	private Long totalWorkMin; // 型はLongに変更
+
+	@Column(name = "total_break_min") // データベースのカラム名に合わせる
+	private Long totalBreakMin; // 型はLongに変更
+
+	public Attendance(User user, LocalDate date) {
+		this.user = user;
+		this.date = date;
+	}
+
 }

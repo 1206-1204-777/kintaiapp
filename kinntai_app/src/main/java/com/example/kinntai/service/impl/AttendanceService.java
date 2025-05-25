@@ -1,5 +1,6 @@
 package com.example.kinntai.service.impl;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -49,6 +50,15 @@ public class AttendanceService {
 
 			// 出勤時刻を設定
 			attendance.setClockIn(LocalDateTime.now());
+			
+			// ★修正: totalBreakMinutes の代わりに totalBreakMin を初期設定★
+			if (attendance.getTotalBreakMin() == null) {
+			    attendance.setTotalBreakMin(0L);
+			}
+			// ★修正: totalWorkMinutes の代わりに totalWorkMin を初期設定★
+			if (attendance.getTotalWorkMin() == null) {
+			    attendance.setTotalWorkMin(0L);
+			}
 
 			return attendanceRepository.save(attendance);
 		} catch (Exception e) {
@@ -85,6 +95,19 @@ public class AttendanceService {
 
 			// 退勤時刻を設定
 			attendance.setClockOut(LocalDateTime.now());
+
+			// 1. 総勤務時間（出勤から退勤までの時間）を計算
+			// Duration.between() は LocalDateTime 型の比較に使用します。
+			long totalDurationMinutes = Duration.between(attendance.getClockIn(), attendance.getClockOut()).toMinutes();
+
+			// 2. 一律1時間（60分）の休憩時間を設定
+			long fixedBreakMinutes = 60L;
+			attendance.setTotalBreakMin (fixedBreakMinutes); // totalBreakMinutes に一律60分を設定
+
+			// 3. 実労働時間（総勤務時間から休憩時間を差し引いたもの）を計算し、totalWorkMinutes に設定
+			// 休憩時間を引いた結果が負にならないように Math.max を使用
+			long actualWorkMinutes = Math.max(0, totalDurationMinutes - fixedBreakMinutes);
+			attendance.setTotalWorkMin(actualWorkMinutes); // totalWorkMinutes に実労働時間を設定
 
 			return attendanceRepository.save(attendance);
 		} catch (Exception e) {
