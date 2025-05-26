@@ -1547,49 +1547,56 @@ row.appendChild(workHoursCell);
         }
 
         // 勤務地テーブルを描画
-        function renderLocationTable(locations) {
-            const tableBody = document.getElementById('locationTable');
-            if (!tableBody) return;
+       function renderLocationTable(locations) {
+    const tableBody = document.getElementById('locationTable');
+    if (!tableBody) return;
 
-            if (!locations || locations.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">登録された勤務地がありません</td></tr>';
-                return;
-            }
+    if (!locations || locations.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">登録された勤務地がありません</td></tr>';
+        return;
+    }
 
-            tableBody.innerHTML = '';
-            locations.forEach(location => {
-                const row = document.createElement('tr');
-                
-                const idCell = document.createElement('td');
-                idCell.textContent = location.id;
-                row.appendChild(idCell);
+    tableBody.innerHTML = '';
+    locations.forEach(location => {
+        const row = document.createElement('tr');
 
-                const nameCell = document.createElement('td');
-                nameCell.textContent = location.name;
-                row.appendChild(nameCell);
+        // 登録者
+        const creatorCell = document.createElement('td');
+        creatorCell.textContent = location.createdBy || '不明';
+        row.appendChild(creatorCell);
 
-                const startTimeCell = document.createElement('td');
-                startTimeCell.textContent = formatLocalTime(location.startTime);
-                row.appendChild(startTimeCell);
+        // ID
+        const idCell = document.createElement('td');
+        idCell.textContent = location.id;
+        row.appendChild(idCell);
 
-                const endTimeCell = document.createElement('td');
-                endTimeCell.textContent = formatLocalTime(location.endTime);
-                row.appendChild(endTimeCell);
+        // 勤務地名
+        const nameCell = document.createElement('td');
+        nameCell.textContent = location.name;
+        row.appendChild(nameCell);
 
-                const roleCell = document.createElement('td');
-                roleCell.textContent = location.role === 'ADMIN' ? '管理者のみ' : '全員';
-                row.appendChild(roleCell);
+        // 標準出勤時間
+        const startTimeCell = document.createElement('td');
+        startTimeCell.textContent = formatLocalTime(location.startTime);
+        row.appendChild(startTimeCell);
 
-                const actionCell = document.createElement('td');
-                actionCell.innerHTML = `
-                    <button onclick="editLocation(${location.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
-                    <button onclick="deleteLocation(${location.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
-                `;
-                row.appendChild(actionCell);
+        // 標準退勤時間
+        const endTimeCell = document.createElement('td');
+        endTimeCell.textContent = formatLocalTime(location.endTime);
+        row.appendChild(endTimeCell);
 
-                tableBody.appendChild(row);
-            });
-        }
+        // 操作
+        const actionCell = document.createElement('td');
+        actionCell.innerHTML = `
+            <button onclick="editLocation(${location.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+            <button onclick="deleteLocation(${location.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+        `;
+        row.appendChild(actionCell);
+
+        tableBody.appendChild(row);
+    });
+}
+
 
 
         // イベントリスナーの設定
