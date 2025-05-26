@@ -42,10 +42,4 @@ public class Location {
 	@Column(name = "created_by")
 	private String createdBy;
 	
-	public Location(String name, LocalTime startTime, LocalTime endTime, String createdBy) {
-		this.name = name;
-		this.startTime = startTime;
-		this.endTime = endTime;
-		this.createdBy = createdBy;
-	}
 }

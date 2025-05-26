@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>勤怠管理システム</title>
-    <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>勤怠管理システム</title>
+<style>
         /* 既存のindex.htmlスタイルに合わせたスタイル */
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -321,644 +322,609 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>勤怠管理システム</h1>
-        <div class="user-info">
-            <span id="userDisplay" class="user-name">山田 太郎</span>
-            <button id="logoutBtn" class="logout-btn">ログアウト</button>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="mockup-nav">
-            <button onclick="showScreen('attendance')" class="active">勤怠登録</button>
-            <button onclick="showScreen('edit')">勤怠修正</button>
-            <button onclick="showScreen('holiday')">休日登録</button>
-            <button onclick="showScreen('export')">エクセル出力</button>
-            <button onclick="showScreen('location')">勤務地登録</button>
-        </div>
-
-        <div id="attendance" class="mockup-screen active">
-            <div class="section">
-                <h2>打刻</h2>
-                <div id="errorMessage" class="error-message"></div>
-                <div id="successMessage" class="success-message"></div>
-                <div class="time-display" id="currentTime">15:30:45</div>
-                <div class="attendance-status" id="attendanceStatus">
-                    <span class="status-circle"></span>状態確認中...
+<div class="header">
+<h1>勤怠管理システム</h1>
+<div class="user-info">
+<span class="user-name" id="userDisplay">山田 太郎</span>
+<button class="logout-btn" id="logoutBtn">ログアウト</button>
+</div>
+</div>
+<div class="container">
+<div class="mockup-nav">
+<button class="active" onclick="showScreen('attendance')">勤怠登録</button>
+<button onclick="showScreen('edit')">勤怠修正</button>
+<button onclick="showScreen('holiday')">休日登録</button>
+<button onclick="showScreen('export')">エクセル出力</button>
+<button onclick="showScreen('location')">勤務地登録</button>
+</div>
+<div class="mockup-screen active" id="attendance">
+<div class="section">
+<h2>打刻</h2>
+<div class="error-message" id="errorMessage"></div>
+<div class="success-message" id="successMessage"></div>
+<div class="time-display" id="currentTime">15:30:45</div>
+<div class="attendance-status" id="attendanceStatus">
+<span class="status-circle"></span>状態確認中...
                 </div>
-                <div class="button-container">
-                    <button id="clockInButton" class="clock-in-button" disabled>出勤</button>
-                    <button id="clockOutButton" class="clock-out-button" disabled>退勤</button>
-                </div>
-                <div id="loading" class="loading" style="display: none;">処理中...</div>
-            </div>
+<div class="button-container">
+<button class="clock-in-button" disabled="" id="clockInButton">出勤</button>
+<button class="clock-out-button" disabled="" id="clockOutButton">退勤</button>
+</div>
+<div class="loading" id="loading" style="display: none;">処理中...</div>
+</div>
+<div class="section">
+<h2>今日の勤怠</h2>
+<p><strong>定時時刻:</strong> <span id="scheduledTime">-</span></p>
+<p><strong>出勤時刻:</strong> <span id="todayClockIn">-</span></p>
+<p><strong>退勤時刻:</strong> <span id="todayClockOut">-</span></p>
+<p><strong>勤務時間:</strong> <span id="todayWorkHours">-</span></p>
+<p><strong>休憩時間:</strong> <span id="todayTotalBreakHours">-</span></p>
+</div>
+<div class="section">
+<h2>勤怠履歴</h2>
+<div class="tab-container">
+<ul class="tabs">
+<li class="tab-item active" onclick="changeTab('daily')">日次</li>
+<li class="tab-item" onclick="changeTab('weekly')">週次</li>
+<li class="tab-item" onclick="changeTab('monthly')">月次</li>
+</ul>
+<div class="tab-content active" id="daily">
+<div class="month-selector">
+<label for="monthSelect">月を選択:</label>
+<input id="monthSelect" type="month" value="2025-05"/>
+</div>
+<div class="loading" id="tableLoading" style="display: none;">読み込み中...</div>
+<table>
+<thead>
+<tr>
+<th>日付</th>
+<th>出勤時間</th>
+<th>退勤時間</th>
+<th>勤務時間</th>
+<th>休憩時間</th>
+<th>状態</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="attendanceTable">
+<tr>
+<td colspan="7" style="text-align: center;">読み込み中...</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="tab-content" id="weekly">
+<div class="month-selector">
+<label for="weekSelect">週を選択:</label>
+<input id="weekSelect" type="week" value="2025-W21"/>
+</div>
+<table>
+<thead>
+<tr>
+<th>週</th>
+<th>期間</th>
+<th>出勤日数</th>
+<th>総実働時間</th>
+<th>総残業時間</th>
+<th>詳細</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第3週</td>
+<td>2025/05/19〜2025/05/25</td>
+<td>3日</td>
+<td>18時間0分</td>
+<td>1時間0分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+</tr>
+<tr>
+<td>第2週</td>
+<td>2025/05/12〜2025/05/18</td>
+<td>5日</td>
+<td>40時間30分</td>
+<td>5時間30分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+</tr>
+<tr>
+<td>第1週</td>
+<td>2025/05/05〜2025/05/11</td>
+<td>4日</td>
+<td>32時間0分</td>
+<td>0時間0分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="tab-content" id="monthly">
+<div class="month-selector">
+<label for="monthSelectReport">月を選択:</label>
+<input id="monthSelectReport" type="month" value="2025-05"/>
+</div>
+<table>
+<thead>
+<tr>
+<th>月</th>
+<th>出勤日数</th>
+<th>総実働時間</th>
+<th>総残業時間</th>
+<th>詳細</th>
+<th>CSVダウンロード</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025年5月</td>
+<td>12日</td>
+<td>90時間30分</td>
+<td>6時間30分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+<td>
+<button onclick="showScreen('export')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">CSV</button>
+</td>
+</tr>
+<tr>
+<td>2025年4月</td>
+<td>20日</td>
+<td>160時間45分</td>
+<td>8時間45分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+<td>
+<button onclick="showScreen('export')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">CSV</button>
+</td>
+</tr>
+<tr>
+<td>2025年3月</td>
+<td>22日</td>
+<td>176時間15分</td>
+<td>0時間15分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+<td>
+<button onclick="showScreen('export')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">CSV</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="mockup-screen" id="edit">
+<div class="section">
+<h2>勤怠修正</h2>
+<div class="error-message" id="editErrorMessage"></div>
+<div class="success-message" id="editSuccessMessage"></div>
+<form id="editForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="edit-date">修正日</label>
+<input id="edit-date" name="date" required="" type="date" value="2025-05-21"/>
+</div>
+<div class="flex-item">
+<label for="edit-reason">修正理由</label>
+<select id="edit-reason" name="reason" required="">
+<option value="">選択してください</option>
+<option value="forgot">打刻忘れ</option>
+<option value="error">打刻ミス</option>
+<option value="system">システムエラー</option>
+<option value="other">その他</option>
+</select>
+</div>
+</div>
+<div class="flex-container">
+<div class="flex-item">
+<label for="edit-start-time">出勤時刻</label>
+<input id="edit-start-time" name="startTime" type="time" value="09:05"/>
+</div>
+<div class="flex-item">
+<label for="edit-end-time">退勤時刻</label>
+<input id="edit-end-time" name="endTime" type="time"/>
+</div>
+</div>
+<div class="flex-container">
+<div class="flex-item">
+<label for="edit-comment">備考</label>
+<textarea id="edit-comment" name="comment" rows="3"></textarea>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #4a6da7; color: white;" type="submit">修正申請</button>
+<button onclick="showScreen('attendance')" style="background-color: #6c757d; color: white;" type="button">キャンセル</button>
+</div>
+</form>
+</div>
+<div class="section">
+<h2>修正申請履歴</h2>
+<table>
+<thead>
+<tr>
+<th>申請日</th>
+<th>対象日</th>
+<th>修正内容</th>
+<th>申請理由</th>
+<th>ステータス</th>
+<th>承認者</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025/05/15</td>
+<td>2025/05/14</td>
+<td>退勤: 18:00 → 19:30</td>
+<td>打刻忘れ</td>
+<td><span style="color: #4CAF50;">承認済</span></td>
+<td>鈴木 部長</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+</tr>
+<tr>
+<td>2025/05/10</td>
+<td>2025/05/10</td>
+<td>出勤: 10:30 → 09:00</td>
+<td>システムエラー</td>
+<td><span style="color: #4CAF50;">承認済</span></td>
+<td>鈴木 部長</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+</tr>
+<tr>
+<td>2025/05/21</td>
+<td>2025/05/20</td>
+<td>出勤: 08:50 → 09:00</td>
+<td>打刻ミス</td>
+<td><span style="color: #fd7e14;">申請中</span></td>
+<td>-</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">取消</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="mockup-screen" id="holiday">
+<div class="section">
+<h2>休日登録</h2>
+<div class="error-message" id="holidayErrorMessage"></div>
+<div class="success-message" id="holidaySuccessMessage"></div>
+<div class="tab-container">
+<ul class="tabs">
+<li class="tab-item active" onclick="changeHolidayTab('personal')">個人休日</li>
+<li class="tab-item" onclick="changeHolidayTab('company')">会社休日</li>
+</ul>
+<div class="tab-content active" id="personal">
+<form id="personalHolidayForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="holiday-date">休日日付 <span style="color: red;">*</span></label>
+<input id="holiday-date" name="date" required="" type="date"/>
+</div>
+<div class="flex-item">
+<label for="holiday-type">休日種別 <span style="color: red;">*</span></label>
+<select id="holiday-type" name="type" required="">
+<option value="">選択してください</option>
+<option value="paid">有給休暇</option>
+<option value="special">特別休暇</option>
+<option value="sick">病気休暇</option>
+<option value="other">その他</option>
+</select>
+</div>
+</div>
+<div class="flex-container">
+<div class="flex-item">
+<label for="holiday-reason">理由</label>
+<textarea id="holiday-reason" name="reason" rows="3"></textarea>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #4a6da7; color: white;" type="submit">申請</button>
+<button onclick="clearHolidayForm()" style="background-color: #6c757d; color: white;" type="button">クリア</button>
+</div>
+</form>
+<h3>休日申請履歴</h3>
+<table>
+<thead>
+<tr>
+<th>申請日</th>
+<th>休日日付</th>
+<th>休日種別</th>
+<th>ステータス</th>
+<th>承認者</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="personalHolidayTable">
+<tr>
+<td colspan="6" style="text-align: center;">読み込み中...</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="tab-content" id="company">
+<form id="companyHolidayForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="company-holiday-date">休日日付 <span style="color: red;">*</span></label>
+<input id="company-holiday-date" name="date" required="" type="date"/>
+</div>
+<div class="flex-item">
+<label for="company-holiday-name">休日名 <span style="color: red;">*</span></label>
+<input id="company-holiday-name" name="name" required="" type="text"/>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #4a6da7; color: white;" type="submit">登録</button>
+<button onclick="clearCompanyHolidayForm()" style="background-color: #6c757d; color: white;" type="button">クリア</button>
+</div>
+</form>
+<h3>会社休日一覧</h3>
+<table>
+<thead>
+<tr>
+<th>日付</th>
+<th>休日名</th>
+<th>登録者</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="companyHolidayTable">
+<tr>
+<td colspan="4" style="text-align: center;">読み込み中...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="mockup-screen" id="export">
+<div class="section">
+<h2>勤怠データ出力</h2>
+<div class="error-message" id="exportErrorMessage"></div>
+<div class="success-message" id="exportSuccessMessage"></div>
+<div class="tab-container">
+<ul class="tabs">
+<li class="tab-item active" onclick="changeExportTab('personal')">個人データ</li>
+<li class="tab-item" onclick="changeExportTab('department')">部門データ</li>
+<li class="tab-item" onclick="changeExportTab('all')">全社データ</li>
+</ul>
+<div class="tab-content active" id="export-personal">
+<form id="exportPersonalForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="export-year-month">年月</label>
+<input id="export-year-month" name="yearMonth" type="month" value="2025-05"/>
+</div>
+<div class="flex-item">
+<label for="export-format">出力形式</label>
+<select id="export-format" name="format">
+<option value="csv">CSV形式
+<option value="excel">Excel形式</option>
+</option></select>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #28a745; color: white;" type="submit">ダウンロード</button>
+</div>
+</form>
+<h3>ダウンロード履歴</h3>
+<table>
+<thead>
+<tr>
+<th>ダウンロード日時</th>
+<th>期間</th>
+<th>形式</th>
+<th>再ダウンロード</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025/05/20 10:25</td>
+<td>2025年4月</td>
+<td>Excel</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">再ダウンロード</button>
+</td>
+</tr>
+<tr>
+<td>2025/04/30 17:50</td>
+<td>2025年4月</td>
+<td>CSV</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">再ダウンロード</button>
+</td>
+</tr>
+<tr>
+<td>2025/04/01 09:15</td>
+<td>2025年3月</td>
+<td>Excel</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">再ダウンロード</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="tab-content" id="export-department">
+<div class="info-box">
+<p>部門データの出力は管理者権限が必要です。</p>
+</div>
+<form id="exportDepartmentForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="export-dept-year-month">年月</label>
+<input id="export-dept-year-month" name="yearMonth" type="month" value="2025-05"/>
+</div>
+<div class="flex-item">
+<label for="export-department">部門</label>
+<select id="export-department" name="department">
+<option value="all">全部門</option>
+<option value="dev">開発部</option>
+<option value="sales">営業部</option>
+<option value="admin">総務部</option>
+</select>
+</div>
+<div class="flex-item">
+<label for="export-dept-format">出力形式</label>
+<select id="export-dept-format" name="format">
+<option value="csv">CSV形式</option>
+<option value="excel">Excel形式</option>
+</select>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #28a745; color: white;" type="submit">ダウンロード</button>
+</div>
+</form>
+</div>
+<div class="tab-content" id="export-all">
+<div class="info-box">
+<p>全社データの出力は管理者権限が必要です。</p>
+</div>
+<form id="exportAllForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="export-all-year-month">年月</label>
+<input id="export-all-year-month" name="yearMonth" type="month" value="2025-05"/>
+</div>
+<div class="flex-item">
+<label for="export-location">勤務地</label>
+<select id="export-location" name="location">
+<option value="all">全拠点</option>
+<option value="tokyo">東京オフィス</option>
+<option value="osaka">大阪オフィス</option>
+<option value="nagoya">名古屋オフィス</option>
+</select>
+</div>
+<div class="flex-item">
+<label for="export-all-format">出力形式</label>
+<select id="export-all-format" name="format">
+<option value="csv">CSV形式</option>
+<option value="excel">Excel形式</option>
+</select>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #28a745; color: white;" type="submit">ダウンロード</button>
+</div>
+</form>
+<h3>集計レポート</h3>
+<div class="flex-container">
+<div class="flex-item section" style="margin-top: 10px;">
+<h4>月次勤務時間レポート</h4>
+<p>全社員の勤務時間集計</p>
+<button style="background-color: #28a745; color: white; margin-top: 10px;">Excelダウンロード</button>
+</div>
+<div class="flex-item section" style="margin-top: 10px;">
+<h4>残業時間レポート</h4>
+<p>部門別・個人別の残業時間集計</p>
+<button style="background-color: #28a745; color: white; margin-top: 10px;">Excelダウンロード</button>
+</div>
+<div class="flex-item section" style="margin-top: 10px;">
+<h4>勤怠異常レポート</h4>
+<p>未打刻・休日出勤・長時間労働の検出</p>
+<button style="background-color: #28a745; color: white; margin-top: 10px;">Excelダウンロード</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mockup-screen" id="location">
+<div class="section">
+<h2>勤務地登録</h2>
+<div class="error-message" id="locationErrorMessage"></div>
+<div class="success-message" id="locationSuccessMessage"></div>
+<form id="locationForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="location-name">勤務地名 <span style="color: red;">*</span></label>
+<input id="location-name" name="name" required="" type="text"/>
+</div>
+</div>
+<div class="flex-container">
+<div class="flex-item">
+<label for="location-start-time">標準出勤時間 <span style="color: red;">*</span></label>
+<input id="location-start-time" name="startTime" required="" type="time" value="09:00"/>
+</div>
+<div class="flex-item">
+<label for="location-end-time">標準退勤時間 <span style="color: red;">*</span></label>
+<input id="location-end-time" name="endTime" required="" type="time" value="18:00"/>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #4a6da7; color: white;" type="submit">登録</button>
+<button onclick="clearLocationForm()" style="background-color: #6c757d; color: white;" type="button">クリア</button>
+</div>
+</form>
+<h3>登録済み勤務地一覧</h3>
+<table>
+<thead>
+<tr>
+<th>登録者</th><th>ID</th>
+<th>勤務地名</th>
+<th>標準出勤時間</th>
+<th>標準退勤時間</th>
 
-            <div class="section">
-                <h2>今日の勤怠</h2>
-                <p><strong>定時時刻:</strong> <span id="scheduledTime">-</span></p>
-                <p><strong>出勤時刻:</strong> <span id="todayClockIn">-</span></p>
-                <p><strong>退勤時刻:</strong> <span id="todayClockOut">-</span></p>
-                <p><strong>勤務時間:</strong> <span id="todayWorkHours">-</span></p>
-                <p><strong>休憩時間:</strong> <span id="todayTotalBreakHours">-</span></p>
-            </div>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="locationTable">
+<tr>
+<td>山田 太郎</td><td>1</td>
+<td>東京オフィス</td>
+<td>09:00</td>
+<td>18:00</td>
 
-            <div class="section">
-                <h2>勤怠履歴</h2>
-                <div class="tab-container">
-                    <ul class="tabs">
-                        <li class="tab-item active" onclick="changeTab('daily')">日次</li>
-                        <li class="tab-item" onclick="changeTab('weekly')">週次</li>
-                        <li class="tab-item" onclick="changeTab('monthly')">月次</li>
-                    </ul>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+</td>
+</tr>
+<tr>
+<td>山田 太郎</td><td>2</td>
+<td>大阪オフィス</td>
+<td>09:30</td>
+<td>18:30</td>
 
-                    <div id="daily" class="tab-content active">
-                        <div class="month-selector">
-                            <label for="monthSelect">月を選択:</label>
-                            <input type="month" id="monthSelect" value="2025-05">
-                        </div>
-                        <div id="tableLoading" class="loading" style="display: none;">読み込み中...</div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>日付</th>
-                                    <th>出勤時間</th>
-                                    <th>退勤時間</th>
-                                    <th>勤務時間</th>
-                                    <th>休憩時間</th>
-                                    <th>状態</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="attendanceTable">
-                                <tr>
-                                    <td colspan="7" style="text-align: center;">読み込み中...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div id="weekly" class="tab-content">
-                        <div class="month-selector">
-                            <label for="weekSelect">週を選択:</label>
-                            <input type="week" id="weekSelect" value="2025-W21">
-                        </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>週</th>
-                                    <th>期間</th>
-                                    <th>出勤日数</th>
-                                    <th>総実働時間</th>
-                                    <th>総残業時間</th>
-                                    <th>詳細</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>第3週</td>
-                                    <td>2025/05/19〜2025/05/25</td>
-                                    <td>3日</td>
-                                    <td>18時間0分</td>
-                                    <td>1時間0分</td>
-                                    <td>
-                                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>第2週</td>
-                                    <td>2025/05/12〜2025/05/18</td>
-                                    <td>5日</td>
-                                    <td>40時間30分</td>
-                                    <td>5時間30分</td>
-                                    <td>
-                                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>第1週</td>
-                                    <td>2025/05/05〜2025/05/11</td>
-                                    <td>4日</td>
-                                    <td>32時間0分</td>
-                                    <td>0時間0分</td>
-                                    <td>
-                                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+</td>
+</tr>
+<tr>
+<td>山田 太郎</td><td>3</td>
+<td>名古屋オフィス</td>
+<td>09:00</td>
+<td>17:30</td>
 
-                    <div id="monthly" class="tab-content">
-                        <div class="month-selector">
-                            <label for="monthSelectReport">月を選択:</label>
-                            <input type="month" id="monthSelectReport" value="2025-05">
-                        </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>月</th>
-                                    <th>出勤日数</th>
-                                    <th>総実働時間</th>
-                                    <th>総残業時間</th>
-                                    <th>詳細</th>
-                                    <th>CSVダウンロード</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>2025年5月</td>
-                                    <td>12日</td>
-                                    <td>90時間30分</td>
-                                    <td>6時間30分</td>
-                                    <td>
-                                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
-                                    </td>
-                                    <td>
-                                        <button onclick="showScreen('export')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">CSV</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2025年4月</td>
-                                    <td>20日</td>
-                                    <td>160時間45分</td>
-                                    <td>8時間45分</td>
-                                    <td>
-                                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
-                                    </td>
-                                    <td>
-                                        <button onclick="showScreen('export')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">CSV</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2025年3月</td>
-                                    <td>22日</td>
-                                    <td>176時間15分</td>
-                                    <td>0時間15分</td>
-                                    <td>
-                                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
-                                    </td>
-                                    <td>
-                                        <button onclick="showScreen('export')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">CSV</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="edit" class="mockup-screen">
-            <div class="section">
-                <h2>勤怠修正</h2>
-                <div id="editErrorMessage" class="error-message"></div>
-                <div id="editSuccessMessage" class="success-message"></div>
-                
-                <form id="editForm">
-                    <div class="flex-container">
-                        <div class="flex-item">
-                            <label for="edit-date">修正日</label>
-                            <input type="date" id="edit-date" name="date" value="2025-05-21" required>
-                        </div>
-                        <div class="flex-item">
-                            <label for="edit-reason">修正理由</label>
-                            <select id="edit-reason" name="reason" required>
-                                <option value="">選択してください</option>
-                                <option value="forgot">打刻忘れ</option>
-                                <option value="error">打刻ミス</option>
-                                <option value="system">システムエラー</option>
-                                <option value="other">その他</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="flex-container">
-                        <div class="flex-item">
-                            <label for="edit-start-time">出勤時刻</label>
-                            <input type="time" id="edit-start-time" name="startTime" value="09:05">
-                        </div>
-                        <div class="flex-item">
-                            <label for="edit-end-time">退勤時刻</label>
-                            <input type="time" id="edit-end-time" name="endTime">
-                        </div>
-                    </div>
-
-                    <div class="flex-container">
-                        <div class="flex-item">
-                            <label for="edit-comment">備考</label>
-                            <textarea id="edit-comment" name="comment" rows="3"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="button-container">
-                        <button type="submit" style="background-color: #4a6da7; color: white;">修正申請</button>
-                        <button type="button" onclick="showScreen('attendance')" style="background-color: #6c757d; color: white;">キャンセル</button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="section">
-                <h2>修正申請履歴</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>申請日</th>
-                            <th>対象日</th>
-                            <th>修正内容</th>
-                            <th>申請理由</th>
-                            <th>ステータス</th>
-                            <th>承認者</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>2025/05/15</td>
-                            <td>2025/05/14</td>
-                            <td>退勤: 18:00 → 19:30</td>
-                            <td>打刻忘れ</td>
-                            <td><span style="color: #4CAF50;">承認済</span></td>
-                            <td>鈴木 部長</td>
-                            <td>
-                                <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>2025/05/10</td>
-                            <td>2025/05/10</td>
-                            <td>出勤: 10:30 → 09:00</td>
-                            <td>システムエラー</td>
-                            <td><span style="color: #4CAF50;">承認済</span></td>
-                            <td>鈴木 部長</td>
-                            <td>
-                                <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>2025/05/21</td>
-                            <td>2025/05/20</td>
-                            <td>出勤: 08:50 → 09:00</td>
-                            <td>打刻ミス</td>
-                            <td><span style="color: #fd7e14;">申請中</span></td>
-                            <td>-</td>
-                            <td>
-                                <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">取消</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="holiday" class="mockup-screen">
-            <div class="section">
-                <h2>休日登録</h2>
-                <div id="holidayErrorMessage" class="error-message"></div>
-                <div id="holidaySuccessMessage" class="success-message"></div>
-                
-                <div class="tab-container">
-                    <ul class="tabs">
-                        <li class="tab-item active" onclick="changeHolidayTab('personal')">個人休日</li>
-                        <li class="tab-item" onclick="changeHolidayTab('company')">会社休日</li>
-                    </ul>
-
-                    <div id="personal" class="tab-content active">
-                        <form id="personalHolidayForm">
-                            <div class="flex-container">
-                                <div class="flex-item">
-                                    <label for="holiday-date">休日日付 <span style="color: red;">*</span></label>
-                                    <input type="date" id="holiday-date" name="date" required>
-                                </div>
-                                <div class="flex-item">
-                                    <label for="holiday-type">休日種別 <span style="color: red;">*</span></label>
-                                    <select id="holiday-type" name="type" required>
-                                        <option value="">選択してください</option>
-                                        <option value="paid">有給休暇</option>
-                                        <option value="special">特別休暇</option>
-                                        <option value="sick">病気休暇</option>
-                                        <option value="other">その他</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flex-item">
-                                    <label for="holiday-reason">理由</label>
-                                    <textarea id="holiday-reason" name="reason" rows="3"></textarea>
-                                </div>
-                            </div>
-                            <div class="button-container">
-                                <button type="submit" style="background-color: #4a6da7; color: white;">申請</button>
-                                <button type="button" style="background-color: #6c757d; color: white;" onclick="clearHolidayForm()">クリア</button>
-                            </div>
-                        </form>
-
-                        <h3>休日申請履歴</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>申請日</th>
-                                    <th>休日日付</th>
-                                    <th>休日種別</th>
-                                    <th>ステータス</th>
-                                    <th>承認者</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="personalHolidayTable">
-                                <tr>
-                                    <td colspan="6" style="text-align: center;">読み込み中...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-					<div id="company" class="tab-content">
-                        <form id="companyHolidayForm">
-                            <div class="flex-container">
-                                <div class="flex-item">
-                                    <label for="company-holiday-date">休日日付 <span style="color: red;">*</span></label>
-                                    <input type="date" id="company-holiday-date" name="date" required>
-                                </div>
-                                <div class="flex-item">
-                                    <label for="company-holiday-name">休日名 <span style="color: red;">*</span></label>
-                                    <input type="text" id="company-holiday-name" name="name" required>
-                                </div>
-                            </div>
-                            <div class="button-container">
-                                <button type="submit" style="background-color: #4a6da7; color: white;">登録</button>
-                                <button type="button" style="background-color: #6c757d; color: white;" onclick="clearCompanyHolidayForm()">クリア</button>
-                            </div>
-                        </form>
-
-                        <h3>会社休日一覧</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>日付</th>
-                                    <th>休日名</th>
-                                    <th>登録者</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="companyHolidayTable">
-                                <tr>
-                                    <td colspan="4" style="text-align: center;">読み込み中...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="export" class="mockup-screen">
-            <div class="section">
-                <h2>勤怠データ出力</h2>
-                <div id="exportErrorMessage" class="error-message"></div>
-                <div id="exportSuccessMessage" class="success-message"></div>
-                
-                <div class="tab-container">
-                    <ul class="tabs">
-                        <li class="tab-item active" onclick="changeExportTab('personal')">個人データ</li>
-                        <li class="tab-item" onclick="changeExportTab('department')">部門データ</li>
-                        <li class="tab-item" onclick="changeExportTab('all')">全社データ</li>
-                    </ul>
-
-                    <div id="export-personal" class="tab-content active">
-                        <form id="exportPersonalForm">
-                            <div class="flex-container">
-                                <div class="flex-item">
-                                    <label for="export-year-month">年月</label>
-                                    <input type="month" id="export-year-month" name="yearMonth" value="2025-05">
-                                </div>
-                                <div class="flex-item">
-                                    <label for="export-format">出力形式</label>
-                                    <select id="export-format" name="format">
-                                        <option value="csv">CSV形式</m>
-                                        <option value="excel">Excel形式</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="button-container">
-                                <button type="submit" style="background-color: #28a745; color: white;">ダウンロード</button>
-                            </div>
-                        </form>
-
-                        <h3>ダウンロード履歴</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ダウンロード日時</th>
-                                    <th>期間</th>
-                                    <th>形式</th>
-                                    <th>再ダウンロード</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>2025/05/20 10:25</td>
-                                    <td>2025年4月</td>
-                                    <td>Excel</td>
-                                    <td>
-                                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">再ダウンロード</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2025/04/30 17:50</td>
-                                    <td>2025年4月</td>
-                                    <td>CSV</td>
-                                    <td>
-                                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">再ダウンロード</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2025/04/01 09:15</td>
-                                    <td>2025年3月</td>
-                                    <td>Excel</td>
-                                    <td>
-                                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">再ダウンロード</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div id="export-department" class="tab-content">
-                        <div class="info-box">
-                            <p>部門データの出力は管理者権限が必要です。</p>
-                        </div>
-
-                        <form id="exportDepartmentForm">
-                            <div class="flex-container">
-                                <div class="flex-item">
-                                    <label for="export-dept-year-month">年月</label>
-                                    <input type="month" id="export-dept-year-month" name="yearMonth" value="2025-05">
-                                </div>
-                                <div class="flex-item">
-                                    <label for="export-department">部門</label>
-                                    <select id="export-department" name="department">
-                                        <option value="all">全部門</option>
-                                        <option value="dev">開発部</option>
-                                        <option value="sales">営業部</option>
-                                        <option value="admin">総務部</option>
-                                    </select>
-                                </div>
-                                <div class="flex-item">
-                                    <label for="export-dept-format">出力形式</label>
-                                    <select id="export-dept-format" name="format">
-                                        <option value="csv">CSV形式</option>
-                                        <option value="excel">Excel形式</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="button-container">
-                                <button type="submit" style="background-color: #28a745; color: white;">ダウンロード</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div id="export-all" class="tab-content">
-                        <div class="info-box">
-                            <p>全社データの出力は管理者権限が必要です。</p>
-                        </div>
-
-                        <form id="exportAllForm">
-                            <div class="flex-container">
-                                <div class="flex-item">
-                                    <label for="export-all-year-month">年月</label>
-                                    <input type="month" id="export-all-year-month" name="yearMonth" value="2025-05">
-                                </div>
-                                <div class="flex-item">
-                                    <label for="export-location">勤務地</label>
-                                    <select id="export-location" name="location">
-                                        <option value="all">全拠点</option>
-                                        <option value="tokyo">東京オフィス</option>
-                                        <option value="osaka">大阪オフィス</option>
-                                        <option value="nagoya">名古屋オフィス</option>
-                                    </select>
-                                </div>
-                                <div class="flex-item">
-                                    <label for="export-all-format">出力形式</label>
-                                    <select id="export-all-format" name="format">
-                                        <option value="csv">CSV形式</option>
-                                        <option value="excel">Excel形式</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="button-container">
-                                <button type="submit" style="background-color: #28a745; color: white;">ダウンロード</button>
-                            </div>
-                        </form>
-
-                        <h3>集計レポート</h3>
-                        <div class="flex-container">
-                            <div class="flex-item section" style="margin-top: 10px;">
-                                <h4>月次勤務時間レポート</h4>
-                                <p>全社員の勤務時間集計</p>
-                                <button style="background-color: #28a745; color: white; margin-top: 10px;">Excelダウンロード</button>
-                            </div>
-                            <div class="flex-item section" style="margin-top: 10px;">
-                                <h4>残業時間レポート</h4>
-                                <p>部門別・個人別の残業時間集計</p>
-                                <button style="background-color: #28a745; color: white; margin-top: 10px;">Excelダウンロード</button>
-                            </div>
-                            <div class="flex-item section" style="margin-top: 10px;">
-                                <h4>勤怠異常レポート</h4>
-                                <p>未打刻・休日出勤・長時間労働の検出</p>
-                                <button style="background-color: #28a745; color: white; margin-top: 10px;">Excelダウンロード</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="location" class="mockup-screen">
-            <div class="section">
-                <h2>勤務地登録</h2>
-                <div id="locationErrorMessage" class="error-message"></div>
-                <div id="locationSuccessMessage" class="success-message"></div>
-                
-                <form id="locationForm">
-                    <div class="flex-container">
-                        <div class="flex-item">
-                            <label for="location-name">勤務地名 <span style="color: red;">*</span></label>
-                            <input type="text" id="location-name" name="name" required>
-                        </div>
-                       
-                    </div>
-                    
-                    <div class="flex-container">
-                        <div class="flex-item">
-                            <label for="location-start-time">標準出勤時間 <span style="color: red;">*</span></label>
-                            <input type="time" id="location-start-time" name="startTime" value="09:00" required>
-                        </div>
-                        <div class="flex-item">
-                            <label for="location-end-time">標準退勤時間 <span style="color: red;">*</span></label>
-                            <input type="time" id="location-end-time" name="endTime" value="18:00" required>
-                        </div>
-                    </div>
-                    
-                    <div class="button-container">
-                        <button type="submit" style="background-color: #4a6da7; color: white;">登録</button>
-                        <button type="button" style="background-color: #6c757d; color: white;" onclick="clearLocationForm()">クリア</button>
-                    </div>
-                </form>
-
-                <h3>登録済み勤務地一覧</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>勤務地名</th>
-                            <th>標準出勤時間</th>
-                            <th>標準退勤時間</th>
-                            <th>登録者</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="locationTable">
-                        <tr>
-                            <td>1</td>
-                            <td>東京オフィス</td>
-                            <td>09:00</td>
-                            <td>18:00</td>
-                            <td>全員</td>
-                            <td>
-                                <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
-                                <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>大阪オフィス</td>
-                            <td>09:30</td>
-                            <td>18:30</td>
-                            <td>全員</td>
-                            <td>
-                                <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
-                                <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>名古屋オフィス</td>
-                            <td>09:00</td>
-                            <td>17:30</td>
-                            <td>全員</td>
-                            <td>
-                                <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
-                                <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <script>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<script>
         // グローバル変数
         let refreshTimer = null;
         let currentUserId = null;
@@ -1595,11 +1561,6 @@ row.appendChild(workHoursCell);
             locations.forEach(location => {
                 const row = document.createElement('tr');
                 
-                const creatorCell = document.createElement('td');
-creatorCell.textContent = location.createdBy || '不明';
-row.appendChild(creatorCell);
-
-                
                 const idCell = document.createElement('td');
                 idCell.textContent = location.id;
                 row.appendChild(idCell);
@@ -1758,7 +1719,7 @@ row.appendChild(creatorCell);
                     reason: formData.get('reason'),
                     startTime: formData.get('startTime'),
                     endTime: formData.get('endTime'),
-                    createdBy: currentUsername 
+                    comment: formData.get('comment')
                 };
 
                 clearEditMessages();
@@ -1873,9 +1834,9 @@ row.appendChild(creatorCell);
                 const formData = new FormData(document.getElementById('locationForm'));
                 const data = {
                     name: formData.get('name'),
-                   
                     startTime: formData.get('startTime'),
-                    endTime: formData.get('endTime')
+                    endTime: formData.get('endTime'),
+                    createdBy: currentUsername || 'システム'
                 };
 
                 clearLocationMessages();

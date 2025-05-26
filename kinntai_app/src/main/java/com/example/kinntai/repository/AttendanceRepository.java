@@ -14,19 +14,22 @@ import com.example.kinntai.entity.User;
 
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
-    
-    Optional<Attendance> findByUserAndDate(User user, LocalDate date);
-    
-    List<Attendance> findByUserIdAndDateBetweenOrderByDateAsc(Long userId, LocalDate startDate, LocalDate endDate);
-    
-    @Query("SELECT a FROM Attendance a WHERE a.user.id = ?1 AND YEAR(a.date) = ?2 AND MONTH(a.date) = ?3 ORDER BY a.date ASC")
-    List<Attendance> findByUserIdAndYearAndMonth(Long userId, int year, int month);
-    
-    List<Attendance> findByDateBetween(LocalDate startDate, LocalDate endDate);
-    
-    /*退勤していないユーザーを見つける*/
-    @Query("SELECT a FROM Attendance a WHERE a.date = :today AND a.clockIn IS NOT NULL AND a.clockOut IS NULL")
-    List<Attendance>findClickedOutToday(@Param ("today") LocalDate today);
+
+	Optional<Attendance> findByUserAndDate(User user, LocalDate date);
+
+	List<Attendance> findByUserIdAndDateBetweenOrderByDateAsc(Long userId, LocalDate startDate, LocalDate endDate);
+
+	@Query("SELECT a FROM Attendance a WHERE a.user.id = ?1 AND YEAR(a.date) = ?2 AND MONTH(a.date) = ?3 ORDER BY a.date ASC")
+	List<Attendance> findByUserIdAndYearAndMonth(Long userId, int year, int month);
+
+	List<Attendance> findByDateBetween(LocalDate startDate, LocalDate endDate);
+
+	/*退勤していないユーザーを見つける*/
+	@Query("SELECT a FROM Attendance a WHERE a.date = :today AND a.clockIn IS NOT NULL AND a.clockOut IS NULL")
+	List<Attendance> findClickedOutToday(@Param("today") LocalDate today);
 
 	List<Attendance> findByUserId(Long userId);
+
+	@Query("SELECT a FROM Attendance a WHERE a.date = :date AND a.clockIn IS NOT NULL AND a.clockOut IS NULL")
+	List<Attendance> findByAttendanceDateAndClockInNotNullAndClockOutIsNull(LocalDate today);
 }

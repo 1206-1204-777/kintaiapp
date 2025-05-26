@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.kinntai.dto.LocationRequest;
 import com.example.kinntai.entity.Location;
+import com.example.kinntai.entity.User;
 import com.example.kinntai.repository.LocationRepository;
+import com.example.kinntai.repository.UserRepository;
 import com.example.kinntai.service.LocationService;
 
 @Service
@@ -19,6 +21,8 @@ public class LocationServiceImpl implements LocationService {
 
 	@Autowired
 	private LocationRepository locationRepository;
+	@Autowired
+	private UserRepository userRepository;
 
 	private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -31,11 +35,17 @@ public class LocationServiceImpl implements LocationService {
 		if (request.getName() == null || request.getName().trim().isEmpty()) {
 			throw new IllegalArgumentException("勤務地名は必須です");
 		}
+		
+		Optional<User> user = userRepository.findByUsername(request.getName());
 
 		LocalTime startTime = LocalTime.parse(request.getStartTime(), TIME_FORMATTER);
 		LocalTime endTime = LocalTime.parse(request.getEndTime(), TIME_FORMATTER);
 
-		Location location = new Location(request.getName(), startTime, endTime);
+		Location location = new Location();
+		location.setName(request.getName());
+		location.setCreatedBy(request.getCreatedBy());
+		location.setStartTime(startTime);
+		location.setEndTime(endTime);
 		return locationRepository.save(location);
 	}
 
