@@ -1,6 +1,9 @@
 package com.example.kinntai.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.kinntai.dto.LocationRequest;
 import com.example.kinntai.entity.Location;
-import com.example.kinntai.service.impl.LocationService;
+import com.example.kinntai.service.LocationService;
 
 @RestController
 @RequestMapping("/api/locations")
@@ -23,14 +26,14 @@ public class LocationController {
     private LocationService locationService;
 
     @PostMapping
-    public ResponseEntity<Location> createLocation(@RequestBody LocationRequest locationRequest) {
+    public ResponseEntity<?> createLocation(@RequestBody LocationRequest locationRequest) {
         try {
             Location location = locationService.createLocation(locationRequest);
-            return ResponseEntity.ok(location);
+            return ResponseEntity.status(HttpStatus.CREATED).body(location);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("勤務地登録に失敗しました。");
         }
     }
 
@@ -42,7 +45,7 @@ public class LocationController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllLocations() {
+    public ResponseEntity<List<Location>> getAllLocations() {
         return ResponseEntity.ok(locationService.findAll());
     }
 }

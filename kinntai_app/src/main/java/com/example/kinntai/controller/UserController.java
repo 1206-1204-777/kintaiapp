@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.kinntai.dto.UserLocationResponse;
-import com.example.kinntai.service.impl.UserService;
+import com.example.kinntai.service.UserService;
 
 @RestController
 @RequestMapping("/api/users")

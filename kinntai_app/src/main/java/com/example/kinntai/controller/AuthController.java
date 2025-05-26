@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.kinntai.dto.LoginRequest;
 import com.example.kinntai.dto.SignupRequest;
 import com.example.kinntai.dto.UserResponse;
-import com.example.kinntai.service.impl.AuthService;
+import com.example.kinntai.service.AuthService;
 
 @RestController
 @RequestMapping("/api/auth")

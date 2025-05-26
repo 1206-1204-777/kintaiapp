@@ -12,9 +12,10 @@ import com.example.kinntai.entity.Location;
 import com.example.kinntai.entity.User;
 import com.example.kinntai.repository.LocationRepository;
 import com.example.kinntai.repository.UserRepository;
+import com.example.kinntai.service.UserService;
 
 @Service
-public class UserService {
+public class UserServiceimpl implements UserService {
 
 	@Autowired
 	private UserRepository userRepository;
@@ -25,6 +26,7 @@ public class UserService {
 	/**
 	 * ユーザー名でユーザーを検索します
 	 */
+	@Override
 	public Optional<User> findByUsername(String username) {
 		return userRepository.findByUsername(username);
 	}
@@ -32,6 +34,7 @@ public class UserService {
 	/**
 	 * IDでユーザーを検索します
 	 */
+	@Override
 	public Optional<User> findById(Long id) {
 		return userRepository.findById(id);
 	}
@@ -39,6 +42,7 @@ public class UserService {
 	/**
 	 * すべてのユーザーを取得します
 	 */
+	@Override
 	public List<User> findAll() {
 		return userRepository.findAll();
 	}
@@ -46,6 +50,7 @@ public class UserService {
 	/**
 	 * ユーザーに勤務地を割り当てます
 	 */
+	@Override
 	@Transactional
 	public User assignLocationToUser(User user, Location location) {
 		user.setLocation(location);
@@ -55,6 +60,7 @@ public class UserService {
 	/**
 	 * ユーザー情報を更新します
 	 */
+	@Override
 	@Transactional
 	public User updateUser(Long id, User userDetails) {
 		User user = userRepository.findById(id)
@@ -70,6 +76,7 @@ public class UserService {
 	/**
 	 * ユーザーを削除します
 	 */
+	@Override
 	@Transactional
 	public boolean deleteUser(Long id) {
 		if (userRepository.existsById(id)) {
@@ -82,6 +89,7 @@ public class UserService {
 	/**
 	 * ユーザーの勤務地情報を取得
 	 */
+	@Override
 	public UserLocationResponse getUserLocationInfo(Long userId) {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));

@@ -73,25 +73,16 @@
                 <input type="text" class="form-control" id="username" name="username" required>
             </div>
             <div class="form-group">
+                <label for="email">メールアドレス</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="form-group">
                 <label for="password">パスワード</label>
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
             <div class="form-group">
                 <label for="confirmPassword">パスワード（確認）</label>
                 <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
-            </div>
-            <hr>
-            <div class="form-group">
-                <label for="locationName">勤務地名</label>
-                <input type="text" class="form-control" id="locationName" name="locationName" required>
-            </div>
-            <div class="form-group">
-                <label for="startTime">開始時刻</label>
-                <input type="time" class="form-control" id="startTime" name="startTime" required>
-            </div>
-            <div class="form-group">
-                <label for="endTime">終了時刻</label>
-                <input type="time" class="form-control" id="endTime" name="endTime" required>
             </div>
             <button type="submit" class="btn btn-register" id="registerButton">登録</button>
             <div class="loading-spinner" id="loadingSpinner">
@@ -122,19 +113,31 @@
             e.preventDefault();
 
             const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            const locationName = document.getElementById('locationName').value.trim();
-            const startTime = document.getElementById('startTime').value;
-            const endTime = document.getElementById('endTime').value;
 
-            if (!username || !password || !confirmPassword || !locationName || !startTime || !endTime) {
-                showError("すべてのフィールドを入力してください");
+            // バリデーション - 必須フィールドのみチェック
+            if (!username || !email || !password || !confirmPassword) {
+                showError("必須フィールドをすべて入力してください");
+                return;
+            }
+
+            // メールアドレスの形式チェック
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email)) {
+                showError("正しいメールアドレスを入力してください");
                 return;
             }
 
             if (password !== confirmPassword) {
                 showError("パスワードが一致しません");
+                return;
+            }
+
+            // パスワードの最小長チェック
+            if (password.length < 6) {
+                showError("パスワードは6文字以上で入力してください");
                 return;
             }
 
@@ -148,10 +151,9 @@
                     },
                     body: JSON.stringify({
                         username: username,
-                        password: password,
-                        location: locationName,
-                        startTime: startTime,
-                        endTime: endTime
+                        email: email,
+                        password: password
+                        // location, startTime, endTime は削除済み
                     })
                 });
 
@@ -166,34 +168,8 @@
                 localStorage.setItem('userId', userData.userId);
                 localStorage.setItem('username', userData.username);
 
-                const locationResponse = await fetch('/api/locations', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${userData.token}`
-                    },
-                    body: JSON.stringify({
-                        name: locationName,
-                        startTime: startTime,
-                        endTime: endTime
-                    })
-                });
-
-                if (!locationResponse.ok) {
-                    console.error('ロケーション登録エラー:', locationResponse.status);
-                    window.location.href = "index.html";
-                    return;
-                }
-
-                const locationData = await locationResponse.json();
-
-                await fetch(`/api/users/${userData.userId}/location/${locationData.id}`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${userData.token}`
-                    }
-                });
-
+                // 勤務地登録関連のAPI呼び出しブロックは完全に削除済み
+                // ユーザー登録成功後にindex.htmlへ遷移
                 window.location.href = "index.html";
 
             } catch (error) {

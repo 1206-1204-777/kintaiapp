@@ -13,9 +13,10 @@ import com.example.kinntai.entity.User;
 import com.example.kinntai.entity.UserRole;
 import com.example.kinntai.repository.LocationRepository;
 import com.example.kinntai.repository.UserRepository;
+import com.example.kinntai.service.AuthService;
 
 @Service
-public class AuthService {
+public class AuthServiceImpl implements AuthService {
 
 	@Autowired
 	private UserRepository userRepository;
@@ -24,6 +25,7 @@ public class AuthService {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
+	@Override
 	@Transactional
 	public UserResponse registerUser(SignupRequest request) {
 		// ユーザー名の重複チェック
@@ -46,6 +48,7 @@ public class AuthService {
 		
 		
 		user.setUsername(request.getUsername());
+		user.setEmail(request.getEmail());
 		user.setPassword(encodedPassword); // BCryptでエンコードされたパスワード
 		user.setRole(UserRole.USER);
 		user.setLocation(location);
@@ -60,6 +63,7 @@ public class AuthService {
 		UserResponse response = new UserResponse();
 		response.setUserId(savedUser.getId());
 		response.setUsername(savedUser.getUsername());
+		response.setEmail(savedUser.getEmail());
 		response.setStartTime(savedUser.getDefaultStartTime());
 		response.setEndTime(savedUser.getDefaultEndTime());
 		response.setToken("dummy-token-" + savedUser.getId());
@@ -73,6 +77,7 @@ public class AuthService {
 		return response;
 	}
 
+	@Override
 	@Transactional(readOnly = true)
 	public UserResponse login(LoginRequest request) {
 		try {
@@ -89,6 +94,7 @@ public class AuthService {
 			UserResponse response = new UserResponse();
 			response.setUserId(user.getId());
 			response.setUsername(user.getUsername());
+			response.setEmail(user.getEmail());
 			response.setToken("dummy-token-" + user.getId());
 
 			// 勤務地情報が設定されている場合はそれも含める

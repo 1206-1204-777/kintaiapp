@@ -1,6 +1,7 @@
 package com.example.kinntai.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,8 @@ import com.example.kinntai.entity.UserRole;
 public interface LocationRepository extends JpaRepository<Location, Long> {
 	@Query("SELECT DISTINCT l FROM Location l JOIN l.users u WHERE u.role = :role")
 	List<Location> findByUsersRole(@Param("role") UserRole role);
+
+	Optional<Location> findByName(String name);
 
 
 }
