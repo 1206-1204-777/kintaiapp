@@ -2,6 +2,7 @@ package com.example.kinntai.entity;
 
 import java.time.LocalTime;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -35,13 +36,13 @@ public class User {
 	@Column(nullable = false)
 	private String password;
 
-	@Column(name = "email")
+	@Column(name = "email",nullable = false)
 	private String email;
 
 	@Column(name = "role", nullable = false)
 	private UserRole role;
 
-	@ManyToOne(fetch = FetchType.EAGER)
+	@ManyToOne(fetch = FetchType.EAGER,cascade = CascadeType.PERSIST)
 	@JoinColumn(name = "location_id")
 	private Location location;
 	

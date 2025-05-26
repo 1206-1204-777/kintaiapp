@@ -338,7 +338,6 @@
             <button onclick="showScreen('location')">勤務地登録</button>
         </div>
 
-        <!-- 勤怠登録画面 (index.html) -->
         <div id="attendance" class="mockup-screen active">
             <div class="section">
                 <h2>打刻</h2>
@@ -510,7 +509,6 @@
             </div>
         </div>
 
-        <!-- 勤怠修正画面 -->
         <div id="edit" class="mockup-screen">
             <div class="section">
                 <h2>勤怠修正</h2>
@@ -613,7 +611,6 @@
             </div>
         </div>
 
-        <!-- 休日登録画面 -->
         <div id="holiday" class="mockup-screen">
             <div class="section">
                 <h2>休日登録</h2>
@@ -715,7 +712,6 @@
             </div>
         </div>
 
-        <!-- エクセル出力画面 -->
         <div id="export" class="mockup-screen">
             <div class="section">
                 <h2>勤怠データ出力</h2>
@@ -739,7 +735,7 @@
                                 <div class="flex-item">
                                     <label for="export-format">出力形式</label>
                                     <select id="export-format" name="format">
-                                        <option value="csv">CSV形式</option>
+                                        <option value="csv">CSV形式</m>
                                         <option value="excel">Excel形式</option>
                                     </select>
                                 </div>
@@ -878,7 +874,6 @@
             </div>
         </div>
 
-        <!-- 勤務地登録画面 -->
         <div id="location" class="mockup-screen">
             <div class="section">
                 <h2>勤務地登録</h2>
@@ -891,13 +886,7 @@
                             <label for="location-name">勤務地名 <span style="color: red;">*</span></label>
                             <input type="text" id="location-name" name="name" required>
                         </div>
-                        <div class="flex-item">
-                            <label for="location-role">権限 <span style="color: red;">*</span></label>
-                            <select id="location-role" name="role" required>
-                                <option value="ALL">全員</option>
-                                <option value="ADMIN">管理者のみ</option>
-                            </select>
-                        </div>
+                       
                     </div>
                     
                     <div class="flex-container">
@@ -925,7 +914,7 @@
                             <th>勤務地名</th>
                             <th>標準出勤時間</th>
                             <th>標準退勤時間</th>
-                            <th>権限</th>
+                            <th>登録者</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -1005,11 +994,28 @@
                 if (monthSelectElement) {
                     monthSelectElement.value = getCurrentMonth();
                 }
+                const exportMonthSelectElement = document.getElementById('export-year-month');
+                if (exportMonthSelectElement) {
+                    exportMonthSelectElement.value = getCurrentMonth();
+                }
+                 const exportDeptMonthSelectElement = document.getElementById('export-dept-year-month');
+                if (exportDeptMonthSelectElement) {
+                    exportDeptMonthSelectElement.value = getCurrentMonth();
+                }
+                 const exportAllMonthSelectElement = document.getElementById('export-all-year-month');
+                if (exportAllMonthSelectElement) {
+                    exportAllMonthSelectElement.value = getCurrentMonth();
+                }
+                const monthSelectReportElement = document.getElementById('monthSelectReport');
+                if (monthSelectReportElement) {
+                    monthSelectReportElement.value = getCurrentMonth();
+                }
+
 
                 setupEventListeners();
             } catch (error) {
                 console.error('初期化エラー:', error);
-                showError('ページの初期化中にエラーが発生しました。ページをリロードしてください。');
+                showAttendanceError('ページの初期化中にエラーが発生しました。ページをリロードしてください。');
             }
         });
 
@@ -1022,11 +1028,12 @@
                     checkAttendanceStatus(),
                     loadScheduledTime(),
                     loadPersonalHolidays(),
-                    loadCompanyHolidays()
+                    loadCompanyHolidays(),
+                    loadLocations()
                 ]);
             } catch (error) {
                 console.error('アプリケーション初期化エラー:', error);
-                showError('データの読み込み中にエラーが発生しました。');
+                showAttendanceError('データの読み込み中にエラーが発生しました。');
             }
         }
 
@@ -1383,7 +1390,10 @@ row.appendChild(workHoursCell);
                 await Promise.all([
                     loadTodayAttendance(),
                     checkAttendanceStatus(),
-                    loadAttendanceHistory(getCurrentMonth())
+                    loadAttendanceHistory(getCurrentMonth()),
+                    loadPersonalHolidays(), // 個人休日も更新
+                    loadCompanyHolidays(), // 会社休日も更新
+                    loadLocations() // 勤務地も更新
                 ]);
             } catch (error) {
                 console.error('データ更新エラー:', error);
@@ -1532,19 +1542,95 @@ row.appendChild(workHoursCell);
                 row.appendChild(creatorCell);
 
                 const actionCell = document.createElement('td');
+                // 編集・削除ボタンは管理者権限で表示制御が必要な場合がある
+                // ここでは、createdByが'システム'でない場合に表示
                 if (holiday.createdBy && holiday.createdBy !== 'システム') {
                     actionCell.innerHTML = `
-                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
-                        <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+                        <button onclick="editCompanyHoliday(${holiday.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+                        <button onclick="deleteCompanyHoliday(${holiday.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
                     `;
                 } else {
-                    actionCell.innerHTML = '';
+                    actionCell.innerHTML = ''; // システム登録の休日は編集・削除不可
                 }
                 row.appendChild(actionCell);
 
                 tableBody.appendChild(row);
             });
         }
+        
+        // 勤務地を読み込む
+        async function loadLocations() {
+            try {
+                const response = await fetchWithTimeout('/api/locations');
+                if (response.ok) {
+                    const data = await response.json();
+                    renderLocationTable(data);
+                } else {
+                    console.error('勤務地取得エラー:', response.status);
+                    const tableBody = document.getElementById('locationTable');
+                    if (tableBody) {
+                        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">データの取得に失敗しました</td></tr>';
+                    }
+                }
+            } catch (error) {
+                console.error('勤務地取得エラー:', error);
+                const tableBody = document.getElementById('locationTable');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">データの取得に失敗しました</td></tr>';
+                }
+            }
+        }
+
+        // 勤務地テーブルを描画
+        function renderLocationTable(locations) {
+            const tableBody = document.getElementById('locationTable');
+            if (!tableBody) return;
+
+            if (!locations || locations.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">登録された勤務地がありません</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = '';
+            locations.forEach(location => {
+                const row = document.createElement('tr');
+                
+                const creatorCell = document.createElement('td');
+creatorCell.textContent = location.createdBy || '不明';
+row.appendChild(creatorCell);
+
+                
+                const idCell = document.createElement('td');
+                idCell.textContent = location.id;
+                row.appendChild(idCell);
+
+                const nameCell = document.createElement('td');
+                nameCell.textContent = location.name;
+                row.appendChild(nameCell);
+
+                const startTimeCell = document.createElement('td');
+                startTimeCell.textContent = formatLocalTime(location.startTime);
+                row.appendChild(startTimeCell);
+
+                const endTimeCell = document.createElement('td');
+                endTimeCell.textContent = formatLocalTime(location.endTime);
+                row.appendChild(endTimeCell);
+
+                const roleCell = document.createElement('td');
+                roleCell.textContent = location.role === 'ADMIN' ? '管理者のみ' : '全員';
+                row.appendChild(roleCell);
+
+                const actionCell = document.createElement('td');
+                actionCell.innerHTML = `
+                    <button onclick="editLocation(${location.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+                    <button onclick="deleteLocation(${location.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+                `;
+                row.appendChild(actionCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+
 
         // イベントリスナーの設定
         function setupEventListeners() {
@@ -1574,7 +1660,7 @@ row.appendChild(workHoursCell);
                         stopAutoRefresh();
                         localStorage.removeItem('userId');
                         localStorage.removeItem('username');
-                        window.location.href = 'login.html';
+                        window.location.href = 'login.html'; // 実際のログインページにリダイレクト
                     });
                 }
 
@@ -1643,18 +1729,36 @@ row.appendChild(workHoursCell);
                     await submitExportForm('personal');
                 });
             }
+            const exportDepartmentForm = document.getElementById('exportDepartmentForm');
+            if (exportDepartmentForm) {
+                exportDepartmentForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await submitExportForm('department');
+                });
+            }
+            const exportAllForm = document.getElementById('exportAllForm');
+            if (exportAllForm) {
+                exportAllForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await submitExportForm('all');
+                });
+            }
         }
 
         // 勤怠修正フォーム送信
         async function submitEditForm() {
             try {
+                if (!currentUserId) {
+                    showEditError('ユーザー情報が見つかりません。');
+                    return;
+                }
                 const formData = new FormData(document.getElementById('editForm'));
                 const data = {
                     date: formData.get('date'),
                     reason: formData.get('reason'),
                     startTime: formData.get('startTime'),
                     endTime: formData.get('endTime'),
-                    comment: formData.get('comment')
+                    createdBy: currentUsername 
                 };
 
                 clearEditMessages();
@@ -1670,6 +1774,7 @@ row.appendChild(workHoursCell);
                 if (response.ok) {
                     showEditSuccess('勤怠修正申請が送信されました');
                     document.getElementById('editForm').reset();
+                    await loadAttendanceHistory(getCurrentMonth()); // 修正後に勤怠履歴を再読み込み
                 } else {
                     const errorData = await response.json().catch(() => null);
                     showEditError(errorData?.message || '修正申請に失敗しました');
@@ -1683,13 +1788,17 @@ row.appendChild(workHoursCell);
         // 個人休日申請フォーム送信
         async function submitPersonalHolidayForm() {
             try {
+                if (!currentUserId) {
+                    showHolidayError('ユーザー情報が見つかりません。');
+                    return;
+                }
                 const formData = new FormData(document.getElementById('personalHolidayForm'));
                 const data = {
-               holidayDate: formData.get('date'),
-    holidayName: formData.get('name'), // ← 必須
-    reason: formData.get('reason'),
-    holidayType: formData.get('type'), // HolidayType.PERSONAL など
-    userId: currentUserId  // ログイン中のユーザーIDを追加
+                    holidayDate: formData.get('date'),
+                    holidayName: '個人休日', // 必要に応じて動的に変更
+                    reason: formData.get('reason'),
+                    holidayType: formData.get('type'),
+                    userId: currentUserId 
                 };
 
                 clearHolidayMessages();
@@ -1716,49 +1825,55 @@ row.appendChild(workHoursCell);
             }
         }
 
-
-
        // 会社休日登録フォーム送信
-async function submitCompanyHolidayForm() {
-    try {
-        const formData = new FormData(document.getElementById('companyHolidayForm'));
-        const data = {
-            holidayDate: formData.get('date'),
-            holidayName: formData.get('name'),
-            userId: currentUserId // ← 現在ログイン中のユーザーIDを含める
-        };
+        async function submitCompanyHolidayForm() {
+            try {
+                if (!currentUserId) {
+                    showHolidayError('ユーザー情報が見つかりません。');
+                    return;
+                }
+                const formData = new FormData(document.getElementById('companyHolidayForm'));
+                const data = {
+                    holidayDate: formData.get('date'),
+                    holidayName: formData.get('name'),
+                    createdBy: currentUsername // 登録者名として利用
+                };
 
-        clearHolidayMessages();
-        
-        const response = await fetchWithTimeout('/api/holidays/company/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
+                clearHolidayMessages();
+                
+                const response = await fetchWithTimeout('/api/holidays/company/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
 
-        if (response.ok) {
-            showHolidaySuccess('会社休日が登録されました');
-            document.getElementById('companyHolidayForm').reset();
-            await loadCompanyHolidays();
-        } else {
-            const errorData = await response.json().catch(() => null);
-            showHolidayError(errorData?.message || '会社休日登録に失敗しました');
+                if (response.ok) {
+                    showHolidaySuccess('会社休日が登録されました');
+                    document.getElementById('companyHolidayForm').reset();
+                    await loadCompanyHolidays();
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    showHolidayError(errorData?.message || '会社休日登録に失敗しました');
+                }
+            } catch (error) {
+                console.error('会社休日登録エラー:', error);
+                showHolidayError('サーバーとの通信中にエラーが発生しました');
+            }
         }
-    } catch (error) {
-        console.error('会社休日登録エラー:', error);
-        showHolidayError('サーバーとの通信中にエラーが発生しました');
-    }
-}
 
         // 勤務地登録フォーム送信
         async function submitLocationForm() {
             try {
+                if (!currentUserId) {
+                    showLocationError('ユーザー情報が見つかりません。');
+                    return;
+                }
                 const formData = new FormData(document.getElementById('locationForm'));
                 const data = {
                     name: formData.get('name'),
-                    role: formData.get('role'),
+                   
                     startTime: formData.get('startTime'),
                     endTime: formData.get('endTime')
                 };
@@ -1776,6 +1891,7 @@ async function submitCompanyHolidayForm() {
                 if (response.ok) {
                     showLocationSuccess('勤務地が登録されました');
                     document.getElementById('locationForm').reset();
+                    await loadLocations(); // 勤務地リストを更新
                 } else {
                     const errorData = await response.json().catch(() => null);
                     showLocationError(errorData?.message || '勤務地登録に失敗しました');
@@ -1790,16 +1906,40 @@ async function submitCompanyHolidayForm() {
         async function submitExportForm(type) {
             try {
                 let formData;
-                if (type === 'personal') {
-                    formData = new FormData(document.getElementById('exportPersonalForm'));
+                let endpoint = '';
+                let fileNamePrefix = `attendance_${type}`;
+                let userIdParam = '';
+
+                if (!currentUserId) {
+                    showExportError('ユーザー情報が見つかりません。');
+                    return;
                 }
 
+                if (type === 'personal') {
+                    formData = new FormData(document.getElementById('exportPersonalForm'));
+                    endpoint = `/api/export/personal/${currentUserId}`;
+                    userIdParam = `/${currentUserId}`;
+                } else if (type === 'department') {
+                    formData = new FormData(document.getElementById('exportDepartmentForm'));
+                    const department = formData.get('department');
+                    endpoint = `/api/export/department/${department}`;
+                    fileNamePrefix = `attendance_department_${department}`;
+                } else if (type === 'all') {
+                    formData = new FormData(document.getElementById('exportAllForm'));
+                    const location = formData.get('location');
+                    endpoint = `/api/export/all/${location}`;
+                    fileNamePrefix = `attendance_all_${location}`;
+                } else {
+                    showExportError('無効なエクスポートタイプです。');
+                    return;
+                }
+                
                 const yearMonth = formData.get('yearMonth');
                 const format = formData.get('format');
 
                 clearExportMessages();
                 
-                const response = await fetchWithTimeout(`/api/export/${type}/${currentUserId}?month=${yearMonth}&format=${format}`, {
+                const response = await fetchWithTimeout(`${endpoint}?month=${yearMonth}&format=${format}`, {
                     method: 'GET'
                 });
 
@@ -1808,7 +1948,7 @@ async function submitCompanyHolidayForm() {
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `attendance_${type}_${yearMonth}.${format}`;
+                    a.download = `${fileNamePrefix}_${yearMonth}.${format}`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -1825,6 +1965,32 @@ async function submitCompanyHolidayForm() {
             }
         }
 
+        function editLocation(locationId) {
+            alert('勤務地ID ' + locationId + ' の編集機能はまだ実装されていません。');
+            // 実際の編集機能を実装
+        }
+
+        function deleteLocation(locationId) {
+            if (confirm('この勤務地を削除してもよろしいですか？')) {
+                // 実際の削除機能を実装
+                alert('勤務地ID ' + locationId + ' が削除されました。');
+                loadLocations(); // 削除後にリストを更新
+            }
+        }
+        
+        function editCompanyHoliday(holidayId) {
+            alert('会社休日ID ' + holidayId + ' の編集機能はまだ実装されていません。');
+            // 実際の編集機能を実装
+        }
+
+        function deleteCompanyHoliday(holidayId) {
+            if (confirm('この会社休日を削除してもよろしいですか？')) {
+                // 実際の削除機能を実装
+                alert('会社休日ID ' + holidayId + ' が削除されました。');
+                loadCompanyHolidays(); // 削除後にリストを更新
+            }
+        }
+
         // 画面切り替え
         function showScreen(screenId) {
             document.querySelectorAll('.mockup-screen').forEach(screen => {
@@ -1836,7 +2002,11 @@ async function submitCompanyHolidayForm() {
             document.querySelectorAll('.mockup-nav button').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            // クリックされたボタンをactiveにする
+            // event.target はイベントハンドラ内で使用
+            if (event && event.target && event.target.tagName === 'BUTTON') {
+                event.target.classList.add('active');
+            }
         }
 
         // タブ切り替え
@@ -1849,8 +2019,18 @@ async function submitCompanyHolidayForm() {
                 content.classList.remove('active');
             });
             
-            event.target.classList.add('active');
+            // クリックされたタブをactiveにする
+            if (event && event.target && event.target.tagName === 'LI') {
+                 event.target.classList.add('active');
+            }
             document.getElementById(tabId).classList.add('active');
+            
+            // 週次・月次タブが選択されたらアラートを表示 (デモ用)
+            if (tabId === 'weekly' || tabId === 'monthly') {
+                showAttendanceSuccess(`${tabId === 'weekly' ? '週次' : '月次'}表示機能はまだ実装中です。`);
+            } else if (tabId === 'daily') {
+                loadAttendanceHistory(getCurrentMonth()); // 日次に戻ったら再読み込み
+            }
         }
 
         // 休日タブ切り替え
@@ -1862,7 +2042,10 @@ async function submitCompanyHolidayForm() {
                 content.classList.remove('active');
             });
             
-            event.target.classList.add('active');
+            // クリックされたタブをactiveにする
+            if (event && event.target && event.target.tagName === 'LI') {
+                event.target.classList.add('active');
+            }
             document.getElementById(tabId).classList.add('active');
         }
 
@@ -1875,7 +2058,10 @@ async function submitCompanyHolidayForm() {
                 content.classList.remove('active');
             });
             
-            event.target.classList.add('active');
+            // クリックされたタブをactiveにする
+            if (event && event.target && event.target.tagName === 'LI') {
+                event.target.classList.add('active');
+            }
             document.getElementById('export-' + tabId).classList.add('active');
         }
 
@@ -1910,39 +2096,38 @@ async function submitCompanyHolidayForm() {
 
         // ユーティリティ関数
         function formatTime(timeStr) {
-            if (!timeStr) return '-';
+    if (!timeStr) return '-';
 
-            try {
-                const date = new Date(timeStr);
-                if (isNaN(date.getTime())) {
-                    const parts = timeStr.split(':');
-                    if (parts.length >= 2) {
-                        return `${parts[0]}:${parts[1]}`;
-                    }
-                    return timeStr;
-                }
-                return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-
-            } catch (e) {
-                console.error('時刻フォーマットエラー:', e);
-                return '-';
-            }
+    try {
+        // ISO 形式対応：'2025-05-26T09:37:00' → 時刻抽出
+        const isoMatch = timeStr.match(/T(\d{2}:\d{2})/);
+        if (isoMatch && isoMatch[1]) {
+            return isoMatch[1];
         }
+
+        // fallback: 時刻のみ形式（"09:37"など）
+        const parts = timeStr.split(':');
+        if (parts.length >= 2) {
+            return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+        }
+
+        return timeStr;
+    } catch (e) {
+        console.error('時刻フォーマットエラー:', e);
+        return '-';
+    }
+}
 
         function formatLocalTime(timeStr) {
             if (!timeStr) return '-';
 
             try {
-                const date = new Date(timeStr);
-                if (isNaN(date.getTime())) {
-                    const parts = timeStr.split(':');
-                    if (parts.length >= 2) {
-                        return `${parts[0]}:${parts[1]}`;
-                    }
-                    return timeStr;
+                // HH:MM形式の文字列を扱う
+                const parts = timeStr.split(':');
+                if (parts.length >= 2) {
+                    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
                 }
-                return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-
+                return timeStr; // それ以外の形式はそのまま返す
             } catch (e) {
                 console.error('ローカル時刻フォーマットエラー:', e);
                 return '-';
@@ -1954,6 +2139,9 @@ async function submitCompanyHolidayForm() {
             
             try {
                 const date = new Date(dateStr);
+                if (isNaN(date.getTime())) {
+                    return dateStr; // 無効な日付の場合は元の文字列を返す
+                }
                 return date.toLocaleDateString('ja-JP', {
                     year: 'numeric',
                     month: '2-digit',
@@ -1969,8 +2157,18 @@ async function submitCompanyHolidayForm() {
             if (!startTime || !endTime) return '-';
 
             try {
-                const start = new Date(startTime).getTime();
-                const end = new Date(endTime).getTime();
+                // startTimeとendTimeが日付情報を含まない場合を考慮し、今日の日付を付加
+                const today = new Date().toISOString().split('T')[0];
+                const start = new Date(`${today}T${startTime}`).getTime();
+                const end = new Date(`${today}T${endTime}`).getTime();
+                
+                // 退勤時間が翌日になる場合を考慮 (例: 22:00出勤、06:00退勤)
+                if (end < start) {
+                    const nextDayEnd = new Date(`${today}T${endTime}`);
+                    nextDayEnd.setDate(nextDayEnd.getDate() + 1);
+                    end = nextDayEnd.getTime();
+                }
+
                 const diffMs = end - start;
 
                 if (isNaN(diffMs) || diffMs < 0) return '-';
@@ -2000,12 +2198,12 @@ async function submitCompanyHolidayForm() {
 
         function getHolidayTypeText(type) {
             const types = {
-                'paid': '有給休暇',
-                'special': '特別休暇',
-                'sick': '病気休暇',
-                'other': 'その他'
+                'PAID': '有給休暇',
+                'SPECIAL': '特別休暇',
+                'SICK': '病気休暇',
+                'OTHER': 'その他'
             };
-            return types[type] || type;
+            return types[type] || type; // マッピングがない場合は元の値を返す
         }
 
         function getStatusHTML(status) {
@@ -2014,7 +2212,7 @@ async function submitCompanyHolidayForm() {
                 'APPROVED': '<span style="color: #4CAF50;">承認済</span>',
                 'REJECTED': '<span style="color: #dc3545;">却下</span>'
             };
-            return statusMap[status] || status;
+            return statusMap[status] || status; // マッピングがない場合は元の値を返す
         }
 
         // メッセージ表示関連の関数
@@ -2136,6 +2334,8 @@ async function submitCompanyHolidayForm() {
         // ネットワーク状態の監視
         window.addEventListener('online', function() {
             console.log('ネットワーク接続が復旧しました');
+            showAttendanceSuccess('ネットワーク接続が復旧しました');
+            // 必要に応じてデータを再ロード
             initializeApp();
         });
 

@@ -5,8 +5,6 @@ import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -41,13 +39,13 @@ public class Location {
 	@Column(nullable = false)
 	private LocalTime endTime;
 
-	@Enumerated(EnumType.STRING)
-	@Column
-	private UserRole role;
-
-	public Location(String name, LocalTime startTime, LocalTime endTime) {
+	@Column(name = "created_by")
+	private String createdBy;
+	
+	public Location(String name, LocalTime startTime, LocalTime endTime, String createdBy) {
 		this.name = name;
 		this.startTime = startTime;
 		this.endTime = endTime;
+		this.createdBy = createdBy;
 	}
 }
