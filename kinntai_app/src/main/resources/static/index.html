@@ -606,7 +606,7 @@
 <div class="tab-container">
 <ul class="tabs">
 <li class="tab-item active" onclick="changeHolidayTab('personal')">個人休日</li>
-<li class="tab-item" onclick="changeHolidayTab('company')">会社休日</li>
+<li class="tab-item" onclick="changeHolidayTab('company')">現場休日</li>
 </ul>
 <div class="tab-content active" id="personal">
 <form id="personalHolidayForm">
@@ -673,7 +673,7 @@
 <button onclick="clearCompanyHolidayForm()" style="background-color: #6c757d; color: white;" type="button">クリア</button>
 </div>
 </form>
-<h3>会社休日一覧</h3>
+<h3>現場休日一覧</h3>
 <table>
 <thead>
 <tr>
@@ -1358,7 +1358,7 @@ row.appendChild(workHoursCell);
                     checkAttendanceStatus(),
                     loadAttendanceHistory(getCurrentMonth()),
                     loadPersonalHolidays(), // 個人休日も更新
-                    loadCompanyHolidays(), // 会社休日も更新
+                    loadCompanyHolidays(), // 現場休日も更新
                     loadLocations() // 勤務地も更新
                 ]);
             } catch (error) {
@@ -1392,7 +1392,8 @@ row.appendChild(workHoursCell);
             try {
                 if (!currentUserId) return;
                 
-                const response = await fetchWithTimeout(`/api/holidays/personal/${currentUserId}`);
+                // 変更: 新しいAPIエンドポイント
+                const response = await fetchWithTimeout(`/api/personal-holidays/user/${currentUserId}`); 
                 if (response.ok) {
                     const data = await response.json();
                     renderPersonalHolidayTable(data);
@@ -1417,6 +1418,7 @@ row.appendChild(workHoursCell);
             const tableBody = document.getElementById('personalHolidayTable');
             if (!tableBody) return;
 
+            // 履歴が空の場合のメッセージも確認
             if (!holidays || holidays.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">申請履歴がありません</td></tr>';
                 return;
@@ -1427,7 +1429,7 @@ row.appendChild(workHoursCell);
                 const row = document.createElement('tr');
                 
                 const applyDateCell = document.createElement('td');
-                applyDateCell.textContent = formatDate(holiday.createdAt);
+                applyDateCell.textContent = formatDate(holiday.createdAt); // DTOではcreatedAt
                 row.appendChild(applyDateCell);
 
                 const holidayDateCell = document.createElement('td');
@@ -1435,22 +1437,23 @@ row.appendChild(workHoursCell);
                 row.appendChild(holidayDateCell);
 
                 const typeCell = document.createElement('td');
-                typeCell.textContent = getHolidayTypeText(holiday.holidayType);
+                typeCell.textContent = getHolidayTypeText(holiday.holidayType); // DTOではholidayType (Enum名)
                 row.appendChild(typeCell);
 
                 const statusCell = document.createElement('td');
-                statusCell.innerHTML = getStatusHTML(holiday.status);
+                statusCell.innerHTML = getStatusHTML(holiday.status); // DTOではstatus (Enum名)
                 row.appendChild(statusCell);
 
                 const approverCell = document.createElement('td');
-                approverCell.textContent = holiday.approver || '-';
+                approverCell.textContent = holiday.approverName || '-'; // DTOではapproverName
                 row.appendChild(approverCell);
 
                 const actionCell = document.createElement('td');
+                // 申請中 (PENDING) のみキャンセルボタンを表示
                 if (holiday.status === 'PENDING') {
-                    actionCell.innerHTML = '<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">取消</button>';
+                    actionCell.innerHTML = `<button onclick="cancelPersonalHoliday(${holiday.id}, ${currentUserId})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">取消</button>`;
                 } else {
-                    actionCell.innerHTML = '<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>';
+                    actionCell.innerHTML = '<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;" disabled>詳細</button>'; // 詳細ボタンを無効化（デモ用）
                 }
                 row.appendChild(actionCell);
 
@@ -1458,36 +1461,36 @@ row.appendChild(workHoursCell);
             });
         }
 
-        // 会社休日を読み込む
+       // 現場休日を読み込む
         async function loadCompanyHolidays() {
             try {
-                const response = await fetchWithTimeout('/api/holidays/company');
+                // 変更: 新しいAPIエンドポイント
+                const response = await fetchWithTimeout('/api/company-holidays'); 
                 if (response.ok) {
                     const data = await response.json();
                     renderCompanyHolidayTable(data);
                 } else {
-                    console.error('会社休日取得エラー:', response.status);
+                    console.error('現場休日取得エラー:', response.status);
                     const tableBody = document.getElementById('companyHolidayTable');
                     if (tableBody) {
                         tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">データの取得に失敗しました</td></tr>';
                     }
                 }
             } catch (error) {
-                console.error('会社休日取得エラー:', error);
+                console.error('現場休日取得エラー:', error);
                 const tableBody = document.getElementById('companyHolidayTable');
                 if (tableBody) {
                     tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">データの取得に失敗しました</td></tr>';
                 }
             }
         }
-
-        // 会社休日テーブルを描画
+// 現場休日テーブルを描画
         function renderCompanyHolidayTable(holidays) {
             const tableBody = document.getElementById('companyHolidayTable');
             if (!tableBody) return;
 
             if (!holidays || holidays.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">会社休日が登録されていません</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">現場休日が登録されていません</td></tr>';
                 return;
             }
 
@@ -1504,20 +1507,16 @@ row.appendChild(workHoursCell);
                 row.appendChild(nameCell);
 
                 const creatorCell = document.createElement('td');
-                creatorCell.textContent = holiday.createdBy || 'システム';
+                creatorCell.textContent = holiday.createdByUsername || 'システム'; // 変更: createdByUsername
                 row.appendChild(creatorCell);
 
                 const actionCell = document.createElement('td');
                 // 編集・削除ボタンは管理者権限で表示制御が必要な場合がある
-                // ここでは、createdByが'システム'でない場合に表示
-                if (holiday.createdBy && holiday.createdBy !== 'システム') {
-                    actionCell.innerHTML = `
-                        <button onclick="editCompanyHoliday(${holiday.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
-                        <button onclick="deleteCompanyHoliday(${holiday.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
-                    `;
-                } else {
-                    actionCell.innerHTML = ''; // システム登録の休日は編集・削除不可
-                }
+                // バックエンドでcreatedByUsernameを返すようになったため、ここでは単純に表示
+                actionCell.innerHTML = `
+                    <button onclick="editCompanyHoliday(${holiday.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+                    <button onclick="deleteCompanyHoliday(${holiday.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+                `;
                 row.appendChild(actionCell);
 
                 tableBody.appendChild(row);
@@ -1664,7 +1663,7 @@ row.appendChild(workHoursCell);
                 });
             }
 
-            // 会社休日登録フォーム
+            // 現場休日登録フォーム
             const companyHolidayForm = document.getElementById('companyHolidayForm');
             if (companyHolidayForm) {
                 companyHolidayForm.addEventListener('submit', async function(e) {
@@ -1755,16 +1754,17 @@ row.appendChild(workHoursCell);
                 }
                 const formData = new FormData(document.getElementById('personalHolidayForm'));
                 const data = {
+                    userId: currentUserId, // 変更: 申請者のIDを含める
                     holidayDate: formData.get('date'),
-                    holidayName: '個人休日', // 必要に応じて動的に変更
-                    reason: formData.get('reason'),
-                    holidayType: formData.get('type'),
-                    userId: currentUserId 
+                    holidayType: formData.get('type').toUpperCase(), // 変更: Enumに合わせるために大文字化
+                    reason: formData.get('reason')
+                    // status はバックエンドで PENDING が自動設定されるため、フロントからは送らない
                 };
 
                 clearHolidayMessages();
                 
-                const response = await fetchWithTimeout(`/api/holidays/personal/apply`, {
+                // 変更: 新しいAPIエンドポイント
+                const response = await fetchWithTimeout(`/api/personal-holidays/apply`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1775,7 +1775,7 @@ row.appendChild(workHoursCell);
                 if (response.ok) {
                     showHolidaySuccess('休日申請が送信されました');
                     document.getElementById('personalHolidayForm').reset();
-                    await loadPersonalHolidays();
+                    await loadPersonalHolidays(); // 申請履歴を更新
                 } else {
                     const errorData = await response.json().catch(() => null);
                     showHolidayError(errorData?.message || '休日申請に失敗しました');
@@ -1785,8 +1785,38 @@ row.appendChild(workHoursCell);
                 showHolidayError('サーバーとの通信中にエラーが発生しました');
             }
         }
+        
+        // 個人休日申請をキャンセル
+        async function cancelPersonalHoliday(holidayId, userId) {
+            if (!confirm('この休日申請をキャンセルしてもよろしいですか？')) {
+                return;
+            }
 
-       // 会社休日登録フォーム送信
+            try {
+                clearHolidayMessages();
+                
+                // 変更: 新しいAPIエンドポイント
+                const response = await fetchWithTimeout(`/api/personal-holidays/${holidayId}/cancel/user/${userId}`, {
+                    method: 'DELETE', // DELETEリクエスト
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    showHolidaySuccess('休日申請がキャンセルされました');
+                    await loadPersonalHolidays(); // 申請履歴を更新
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    showHolidayError(errorData?.message || '休日申請のキャンセルに失敗しました');
+                }
+            } catch (error) {
+                console.error('個人休日キャンセルエラー:', error);
+                showHolidayError('サーバーとの通信中にエラーが発生しました');
+            }
+        }
+
+      // 現場休日登録フォーム送信
         async function submitCompanyHolidayForm() {
             try {
                 if (!currentUserId) {
@@ -1797,12 +1827,13 @@ row.appendChild(workHoursCell);
                 const data = {
                     holidayDate: formData.get('date'),
                     holidayName: formData.get('name'),
-                    createdBy: currentUsername // 登録者名として利用
+                    createdByUserId: currentUserId // 変更: 登録者のIDを含める
                 };
 
                 clearHolidayMessages();
                 
-                const response = await fetchWithTimeout('/api/holidays/company/register', {
+                // 変更: 新しいAPIエンドポイント
+                const response = await fetchWithTimeout('/api/company-holidays', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1811,19 +1842,53 @@ row.appendChild(workHoursCell);
                 });
 
                 if (response.ok) {
-                    showHolidaySuccess('会社休日が登録されました');
+                    showHolidaySuccess('現場休日が登録されました');
                     document.getElementById('companyHolidayForm').reset();
-                    await loadCompanyHolidays();
+                    await loadCompanyHolidays(); // 現場休日一覧を更新
                 } else {
                     const errorData = await response.json().catch(() => null);
-                    showHolidayError(errorData?.message || '会社休日登録に失敗しました');
+                    showHolidayError(errorData?.message || '現場休日登録に失敗しました');
                 }
             } catch (error) {
-                console.error('会社休日登録エラー:', error);
+                console.error('現場休日登録エラー:', error);
                 showHolidayError('サーバーとの通信中にエラーが発生しました');
             }
         }
+        // 現場休日の編集（IDを渡し、編集フォームを表示するなど）
+        function editCompanyHoliday(holidayId) {
+            // alert('現場休日ID ' + holidayId + ' の編集機能はまだ実装されていません。'); // 既存のアラートは削除またはコメントアウト
+            // TODO: 実際の編集機能を実装 - 例: 編集用モーダルフォームを表示し、GET /api/company-holidays/{id} でデータを取得、PUT /api/company-holidays/{id} で更新
+            showHolidaySuccess('現場休日ID ' + holidayId + ' の編集機能を開始します (未実装)。');
+        }
 
+ // 会社休日の削除
+async function deleteCompanyHoliday(holidayId) {
+    console.log("deleteCompanyHoliday function called for ID:", holidayId); // ★この行を追加
+    if (!confirm('この会社休日を削除してもよろしいですか？')) {
+        return;
+    }
+
+    try {
+        clearHolidayMessages();
+
+        const response = await fetchWithTimeout(`/api/company-holidays/${holidayId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+                if (response.ok) {
+                    showHolidaySuccess('現場休日が削除されました');
+                    await loadCompanyHolidays(); // 削除後にリストを更新
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    showHolidayError(errorData?.message || '現場休日の削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('現場休日削除エラー:', error);
+                showHolidayError('サーバーとの通信中にエラーが発生しました');
+            }
+        }
         // 勤務地登録フォーム送信
         async function submitLocationForm() {
             try {
@@ -1940,14 +2005,14 @@ row.appendChild(workHoursCell);
         }
         
         function editCompanyHoliday(holidayId) {
-            alert('会社休日ID ' + holidayId + ' の編集機能はまだ実装されていません。');
+            alert('現場休日ID ' + holidayId + ' の編集機能はまだ実装されていません。');
             // 実際の編集機能を実装
         }
 
         function deleteCompanyHoliday(holidayId) {
-            if (confirm('この会社休日を削除してもよろしいですか？')) {
+            if (confirm('この現場休日を削除してもよろしいですか？')) {
                 // 実際の削除機能を実装
-                alert('会社休日ID ' + holidayId + ' が削除されました。');
+                alert('現場休日ID ' + holidayId + ' が削除されました。');
                 loadCompanyHolidays(); // 削除後にリストを更新
             }
         }
