@@ -26,7 +26,8 @@ public class AttendanceAlert {
 
     // 毎日21時5分に実行
     // 秒 分 時 日 月 曜日
-    @Scheduled(cron = "0 5 21 * * *")
+  //  @Scheduled(cron = "0 5 21 * * *")
+    @Scheduled(cron = "0 * * * * *")//テスト用
     public void notifyUnclockedOutUsers() {
         logger.info("未退勤者アラートチェックを開始します。"); // 追加
 
@@ -34,8 +35,7 @@ public class AttendanceAlert {
         LocalTime now = LocalTime.now(); // 現在時刻を取得
 
         // 通知時刻（21:00）を過ぎているかチェック
-        // cron設定で21:05に実行されるため、実質このチェックは常にtrueになりますが、念のため
-        if (now.isAfter(LocalTime.of(21, 0))) { 
+       // if (now.isAfter(LocalTime.of(21, 0))) { 
             // 今日の出勤記録があり、かつ退勤記録がまだない勤怠データを取得
             // AttendanceRepositoryに新しいメソッドが必要になる可能性が高いです。
             List<Attendance> unclockedAttendances = attendanceRepository.findByAttendanceDateAndClockInNotNullAndClockOutIsNull(today);
@@ -46,9 +46,9 @@ public class AttendanceAlert {
             } else {
                 logger.info("本日、未退勤者はいませんでした。"); // 追加
             }
-        } else {
-            logger.info("現在の時刻は通知時刻前です。未退勤者チェックはスキップされました。"); // 追加
-        }
+       // } else {
+       //     logger.info("現在の時刻は通知時刻前です。未退勤者チェックはスキップされました。"); // 追加
+      //  }
         logger.info("未退勤者アラートチェックを完了しました。"); // 追加
     }
 }

@@ -22,7 +22,6 @@ import com.example.kinntai.service.NotificationService;
 public class NotificationServiceImpl implements NotificationService {
 
 	private static final Logger logger = LoggerFactory.getLogger(NotificationServiceImpl.class); // クラス名を変更
-    // ★ Loggerのインスタンス名も 'log' から 'logger' に変更することを推奨します (一般的な命名規則)
 
 	@Autowired
 	private UserRepository userRepository; // 'repository' から 'userRepository' に変更（可読性のため）

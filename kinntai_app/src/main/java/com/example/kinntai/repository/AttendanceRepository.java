@@ -31,5 +31,5 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 	List<Attendance> findByUserId(Long userId);
 
 	@Query("SELECT a FROM Attendance a WHERE a.date = :date AND a.clockIn IS NOT NULL AND a.clockOut IS NULL")
-	List<Attendance> findByAttendanceDateAndClockInNotNullAndClockOutIsNull(LocalDate today);
+	List<Attendance> findByAttendanceDateAndClockInNotNullAndClockOutIsNull(@Param("date") LocalDate today);
 }
