@@ -5,19 +5,26 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.EntityNotFoundException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.kinntai.dto.LocationRequest;
 import com.example.kinntai.entity.Location;
 import com.example.kinntai.entity.User;
+import com.example.kinntai.entity.UserRole;
 import com.example.kinntai.repository.LocationRepository;
 import com.example.kinntai.repository.UserRepository;
 import com.example.kinntai.service.LocationService;
 
 @Service
 public class LocationServiceImpl implements LocationService {
+    private static final Logger logger = LoggerFactory.getLogger(LocationServiceImpl.class);
 
 	@Autowired
 	private LocationRepository locationRepository;
@@ -35,7 +42,7 @@ public class LocationServiceImpl implements LocationService {
 		if (request.getName() == null || request.getName().trim().isEmpty()) {
 			throw new IllegalArgumentException("勤務地名は必須です");
 		}
-		
+
 		Optional<User> user = userRepository.findByUsername(request.getName());
 
 		LocalTime startTime = LocalTime.parse(request.getStartTime(), TIME_FORMATTER);
@@ -98,12 +105,41 @@ public class LocationServiceImpl implements LocationService {
 	 * 勤務地を削除します
 	 */
 	@Override
-	@Transactional
-	public boolean deleteLocation(Long id) {
-		if (locationRepository.existsById(id)) {
-			locationRepository.deleteById(id);
-			return true;
-		}
-		return false;
-	}
+    @Transactional // トランザクション管理
+    public void deleteLocation(Long id, User currentUser) {
+        logger.info("Attempting to delete location with ID: {} by user: {}", id, currentUser != null ? currentUser.getUsername() : "Unknown");
+
+        if (currentUser == null) {
+            // ログインしていない場合（通常はSpring Securityで認証済みなのでここには来ないはずですが念のため）
+            logger.warn("Access Denied: Unauthenticated user attempted to delete location ID {}.", id);
+			throw new AccessDeniedException("Authentication required to delete this location.");
+        }
+
+        // 勤務地の存在確認
+        Location location = locationRepository.findById(id)
+                .orElseThrow(() -> {
+                    logger.warn("Location with ID {} not found for deletion.", id);
+                    return new EntityNotFoundException("Location not found with ID: " + id); // EntityNotFoundExceptionをスロー
+                });
+
+        // 権限チェック
+        boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
+        boolean isCreator = location.getCreatedBy() != null &&
+                            location.getCreatedBy().equals(currentUser.getUsername());
+
+        if (!isAdmin && !isCreator) {
+            logger.warn("Access Denied: User {} (Role: {}) attempted to delete location ID {} created by {}. Not authorized.",
+                        currentUser.getUsername(),
+                        currentUser.getRole(),
+                        id,
+                        location.getCreatedBy());
+            throw new AccessDeniedException("You are not authorized to delete this location."); // AccessDeniedExceptionをスロー
+        }
+
+        // 削除処理
+        locationRepository.deleteById(id);
+        logger.info("Location with ID {} successfully deleted by user {}.", id, currentUser.getUsername());
+    }
+
+
 }

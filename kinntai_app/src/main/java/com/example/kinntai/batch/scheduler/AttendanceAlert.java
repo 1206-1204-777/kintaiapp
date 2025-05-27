@@ -14,7 +14,7 @@ import com.example.kinntai.entity.Attendance;
 import com.example.kinntai.repository.AttendanceRepository;
 import com.example.kinntai.service.NotificationService; // あなたの既存のNotificationServiceを使用
 
-@Component // @Service でも動作しますが、スケジューラの場合は @Component が一般的です。
+@Component 
 public class AttendanceAlert {
 
     private static final Logger logger = LoggerFactory.getLogger(AttendanceAlert.class); // 追加
@@ -27,7 +27,7 @@ public class AttendanceAlert {
     // 毎日21時5分に実行
     // 秒 分 時 日 月 曜日
   //  @Scheduled(cron = "0 5 21 * * *")
-    @Scheduled(cron = "0 * * * * *")//テスト用
+    @Scheduled(cron = "5 * * * * *")//テスト用
     public void notifyUnclockedOutUsers() {
         logger.info("未退勤者アラートチェックを開始します。"); // 追加
 

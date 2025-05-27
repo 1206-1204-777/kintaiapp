@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.kinntai.dto.LocationRequest;
 import com.example.kinntai.entity.Location;
+import com.example.kinntai.entity.User;
 @Transactional
 public interface LocationService {
 
@@ -33,6 +34,6 @@ public interface LocationService {
 	/**
 	 * 勤務地を削除します
 	 */
-	boolean deleteLocation(Long id);
+	void deleteLocation(Long id,User currentUser);
 
 }
