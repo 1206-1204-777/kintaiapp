@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.kinntai.dto.LocationRequest;
 import com.example.kinntai.entity.Location;
-
+@Transactional
 public interface LocationService {
 
 	/**

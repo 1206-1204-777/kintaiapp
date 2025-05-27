@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.kinntai.dto.UserLocationResponse;
 import com.example.kinntai.entity.Location;
 import com.example.kinntai.entity.User;
-
+@Transactional
 public interface UserService {
 
 	/**

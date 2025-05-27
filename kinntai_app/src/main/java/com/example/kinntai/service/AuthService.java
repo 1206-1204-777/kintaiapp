@@ -5,7 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.kinntai.dto.LoginRequest;
 import com.example.kinntai.dto.SignupRequest;
 import com.example.kinntai.dto.UserResponse;
-
+@Transactional
 public interface AuthService {
 
 	UserResponse registerUser(SignupRequest request);
