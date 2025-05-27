@@ -1,20 +1,27 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>勤怠管理システム</title>
 <style>
-        /* 既存のindex.htmlスタイルに合わせたスタイル */
+        /* リセットCSS */
+        * {
+            box-sizing: border-box;
+        }
+
+        /* 基本スタイル */
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f5f5f5;
             color: #333;
+            font-size: 16px;
+            line-height: 1.6;
         }
 
+        /* ヘッダー */
         .header {
             background-color: #4a6da7;
             color: white;
@@ -23,21 +30,23 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
         }
 
         .header h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: clamp(18px, 4vw, 24px);
         }
 
         .user-info {
             display: flex;
             align-items: center;
+            gap: 10px;
         }
 
         .user-name {
-            margin-right: 15px;
             font-weight: bold;
+            font-size: clamp(14px, 3vw, 16px);
         }
 
         .logout-btn {
@@ -48,14 +57,17 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            white-space: nowrap;
         }
 
+        /* コンテナ */
         .container {
             max-width: 1200px;
             margin: 20px auto;
-            padding: 0 20px;
+            padding: 0 15px;
         }
 
+        /* セクション */
         .section {
             background-color: white;
             border-radius: 5px;
@@ -69,18 +81,25 @@
             border-bottom: 1px solid #eee;
             padding-bottom: 10px;
             margin-top: 0;
+            font-size: clamp(18px, 3.5vw, 22px);
         }
 
+        h3 {
+            font-size: clamp(16px, 3vw, 18px);
+        }
+
+        /* 時刻表示 */
         .time-display {
-            font-size: 24px;
+            font-size: clamp(20px, 5vw, 24px);
             font-weight: bold;
             margin: 10px 0;
             text-align: center;
         }
 
+        /* 勤怠ステータス */
         .attendance-status {
             text-align: center;
-            font-size: 18px;
+            font-size: clamp(16px, 3.5vw, 18px);
             font-weight: bold;
             margin: 15px 0;
             padding: 10px;
@@ -103,6 +122,7 @@
             background-color: #fff3cd;
         }
 
+        /* ボタンコンテナ */
         .button-container {
             display: flex;
             justify-content: center;
@@ -111,13 +131,20 @@
             margin: 20px 0;
         }
 
+        /* ボタン共通スタイル */
         button {
             padding: 10px 20px;
             border: none;
             border-radius: 4px;
-            font-size: 16px;
+            font-size: clamp(14px, 3vw, 16px);
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.1s;
+            min-width: 100px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         button:disabled {
@@ -145,22 +172,22 @@
             color: white;
         }
 
-        .error-message {
-            background-color: #f8d7da;
-            color: #721c24;
+        /* メッセージ */
+        .error-message, .success-message {
             padding: 10px;
             border-radius: 4px;
             margin-bottom: 15px;
             display: none;
         }
 
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
         .success-message {
             background-color: #d4edda;
             color: #155724;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            display: none;
         }
 
         .loading {
@@ -170,28 +197,40 @@
             color: #666;
         }
 
+        /* テーブル */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 15px 0;
+            min-width: 500px;
         }
 
         th, td {
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #ddd;
+            white-space: nowrap;
         }
 
         th {
             background-color: #4a6da7;
             color: white;
             font-weight: normal;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         tr:nth-child(even) {
             background-color: #f8f9fa;
         }
 
+        /* 月選択 */
         .month-selector {
             margin: 15px 0;
         }
@@ -200,12 +239,16 @@
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            width: auto;
+            max-width: 200px;
         }
 
+        /* フォーム要素 */
         label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
+            font-size: clamp(14px, 2.5vw, 16px);
         }
 
         input, select, textarea {
@@ -215,10 +258,20 @@
             border-radius: 4px;
             margin-bottom: 15px;
             font-size: 16px;
-            box-sizing: border-box;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
         }
 
-        /* モックアップ用の追加スタイル */
+        select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+            padding-right: 40px;
+        }
+
+        /* モックアップナビゲーション */
         .mockup-nav {
             display: flex;
             flex-wrap: wrap;
@@ -237,17 +290,20 @@
             padding: 10px 15px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: clamp(12px, 2.5vw, 14px);
+            flex: 1;
+            min-width: 100px;
         }
 
         .mockup-nav button:hover {
-            background-color: #4a6da7;
+            background-color: #5a77a5;
         }
 
         .mockup-nav button.active {
             background-color: #28a745;
         }
 
+        /* スクリーン表示制御 */
         .mockup-screen {
             display: none;
         }
@@ -256,6 +312,7 @@
             display: block;
         }
 
+        /* フレックスコンテナ */
         .flex-container {
             display: flex;
             flex-wrap: wrap;
@@ -267,12 +324,15 @@
             min-width: 250px;
         }
 
+        /* タブ */
         .tabs {
             display: flex;
             list-style: none;
             padding: 0;
             margin: 0;
             border-bottom: 1px solid #ddd;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .tab-item {
@@ -283,6 +343,8 @@
             margin-right: 5px;
             border-radius: 5px 5px 0 0;
             background-color: #f0f0f0;
+            white-space: nowrap;
+            font-size: clamp(14px, 2.5vw, 16px);
         }
 
         .tab-item.active {
@@ -305,6 +367,7 @@
             display: block;
         }
 
+        /* 情報ボックス */
         .info-box {
             background-color: #e8f4f8;
             border-left: 4px solid #4a6da7;
@@ -312,12 +375,170 @@
             margin-bottom: 15px;
         }
 
+        /* ステータスサークル */
         .status-circle {
             display: inline-block;
             width: 12px;
             height: 12px;
             border-radius: 50%;
             margin-right: 5px;
+        }
+
+        /* モバイル対応 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 15px;
+            }
+
+            .header h1 {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .user-info {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .container {
+                padding: 0 10px;
+                margin: 10px auto;
+            }
+
+            .section {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .mockup-nav {
+                padding: 5px;
+                gap: 5px;
+            }
+
+            .mockup-nav button {
+                padding: 8px 10px;
+                font-size: 12px;
+                min-width: 80px;
+            }
+
+            .flex-container {
+                gap: 10px;
+            }
+
+            .flex-item {
+                min-width: 100%;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+
+            button {
+                padding: 8px 15px;
+                min-width: 80px;
+            }
+
+            .tab-item {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+
+            /* モバイルでのテーブル最適化 */
+            .table-wrapper {
+                margin: 0 -15px;
+                padding: 0 15px;
+            }
+
+            /* 小さい画面用の操作ボタン */
+            td button {
+                padding: 5px 8px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .mockup-nav button {
+                flex: 1 1 calc(50% - 5px);
+            }
+
+            .button-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .time-display {
+                font-size: 20px;
+            }
+
+            h2 {
+                font-size: 18px;
+            }
+
+            /* 極小画面でのテーブル調整 */
+            th, td {
+                padding: 6px 8px;
+                font-size: 12px;
+            }
+        }
+
+        /* タブレット対応 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .container {
+                padding: 0 20px;
+            }
+
+            .flex-item {
+                min-width: calc(50% - 10px);
+            }
+        }
+
+        /* 印刷対応 */
+        @media print {
+            .mockup-nav,
+            .logout-btn,
+            button,
+            .error-message,
+            .success-message {
+                display: none !important;
+            }
+
+            body {
+                background-color: white;
+            }
+
+            .section {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
+            }
+
+            table {
+                font-size: 12px;
+            }
+        }
+
+        /* アクセシビリティ向上 */
+        button:focus,
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: 2px solid #4a6da7;
+            outline-offset: 2px;
+        }
+
+        /* タッチデバイス対応 */
+        @media (hover: none) {
+            button:hover {
+                transform: none;
+            }
         }
     </style>
 </head>
@@ -374,6 +595,7 @@
 <input id="monthSelect" type="month" value="2025-05"/>
 </div>
 <div class="loading" id="tableLoading" style="display: none;">読み込み中...</div>
+<div class="table-wrapper">
 <table>
 <thead>
 <tr>
@@ -393,11 +615,13 @@
 </tbody>
 </table>
 </div>
+</div>
 <div class="tab-content" id="weekly">
 <div class="month-selector">
 <label for="weekSelect">週を選択:</label>
 <input id="weekSelect" type="week" value="2025-W21"/>
 </div>
+<div class="table-wrapper">
 <table>
 <thead>
 <tr>
@@ -443,11 +667,13 @@
 </tbody>
 </table>
 </div>
+</div>
 <div class="tab-content" id="monthly">
 <div class="month-selector">
 <label for="monthSelectReport">月を選択:</label>
 <input id="monthSelectReport" type="month" value="2025-05"/>
 </div>
+<div class="table-wrapper">
 <table>
 <thead>
 <tr>
@@ -502,6 +728,7 @@
 </div>
 </div>
 </div>
+</div>
 <div class="mockup-screen" id="edit">
 <div class="section">
 <h2>勤怠修正</h2>
@@ -548,6 +775,7 @@
 </div>
 <div class="section">
 <h2>修正申請履歴</h2>
+<div class="table-wrapper">
 <table>
 <thead>
 <tr>
@@ -598,6 +826,7 @@
 </table>
 </div>
 </div>
+</div>
 <div class="mockup-screen" id="holiday">
 <div class="section">
 <h2>休日登録</h2>
@@ -638,6 +867,7 @@
 </div>
 </form>
 <h3>休日申請履歴</h3>
+<div class="table-wrapper">
 <table>
 <thead>
 <tr>
@@ -655,6 +885,7 @@
 </tr>
 </tbody>
 </table>
+</div>
 </div>
 <div class="tab-content" id="company">
 <form id="companyHolidayForm">
@@ -674,6 +905,7 @@
 </div>
 </form>
 <h3>現場休日一覧</h3>
+<div class="table-wrapper">
 <table>
 <thead>
 <tr>
@@ -689,6 +921,7 @@
 </tr>
 </tbody>
 </table>
+</div>
 </div>
 </div>
 </div>
@@ -714,9 +947,9 @@
 <div class="flex-item">
 <label for="export-format">出力形式</label>
 <select id="export-format" name="format">
-<option value="csv">CSV形式
+<option value="csv">CSV形式</option>
 <option value="excel">Excel形式</option>
-</option></select>
+</select>
 </div>
 </div>
 <div class="button-container">
@@ -724,6 +957,7 @@
 </div>
 </form>
 <h3>ダウンロード履歴</h3>
+<div class="table-wrapper">
 <table>
 <thead>
 <tr>
@@ -760,6 +994,7 @@
 </tr>
 </tbody>
 </table>
+</div>
 </div>
 <div class="tab-content" id="export-department">
 <div class="info-box">
@@ -874,46 +1109,47 @@
 </div>
 </form>
 <h3>登録済み勤務地一覧</h3>
+<div class="table-wrapper">
 <table>
 <thead>
 <tr>
-<th>登録者</th><th>ID</th>
+<th>登録者</th>
+<th>ID</th>
 <th>勤務地名</th>
 <th>標準出勤時間</th>
 <th>標準退勤時間</th>
-
 <th>操作</th>
 </tr>
 </thead>
 <tbody id="locationTable">
 <tr>
-<td>山田 太郎</td><td>1</td>
+<td>山田 太郎</td>
+<td>1</td>
 <td>東京オフィス</td>
 <td>09:00</td>
 <td>18:00</td>
-
 <td>
 <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
 <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
 </td>
 </tr>
 <tr>
-<td>山田 太郎</td><td>2</td>
+<td>山田 太郎</td>
+<td>2</td>
 <td>大阪オフィス</td>
 <td>09:30</td>
 <td>18:30</td>
-
 <td>
 <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
 <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
 </td>
 </tr>
 <tr>
-<td>山田 太郎</td><td>3</td>
+<td>山田 太郎</td>
+<td>3</td>
 <td>名古屋オフィス</td>
 <td>09:00</td>
 <td>17:30</td>
-
 <td>
 <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
 <button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
@@ -921,6 +1157,7 @@
 </tr>
 </tbody>
 </table>
+</div>
 </div>
 </div>
 </div>
@@ -1862,14 +2099,14 @@ row.appendChild(workHoursCell);
             }
         }
         // 現場休日の編集（IDを渡し、編集フォームを表示するなど）
-         window.editCompanyHoliday = function(holidayId) {
+        window.editCompanyHoliday = function(holidayId) {
             // alert('現場休日ID ' + holidayId + ' の編集機能はまだ実装されていません。'); // 既存のアラートは削除またはコメントアウト
             // TODO: 実際の編集機能を実装 - 例: 編集用モーダルフォームを表示し、GET /api/company-holidays/{id} でデータを取得、PUT /api/company-holidays/{id} で更新
             showHolidaySuccess('現場休日ID ' + holidayId + ' の編集機能を開始します (未実装)。');
         }
 
  // 会社休日の削除
-	window.deleteCompanyHoliday = 	async function (holidayId) {
+window.deleteCompanyHoliday = async function(holidayId) {
     console.log("deleteCompanyHoliday function called for ID:", holidayId); // ★この行を追加
     if (!confirm('この会社休日を削除してもよろしいですか？')) {
         return;
@@ -1998,29 +2235,16 @@ row.appendChild(workHoursCell);
             }
         }
 
-         window.editLocation = function(locationId) {
+        function editLocation(locationId) {
             alert('勤務地ID ' + locationId + ' の編集機能はまだ実装されていません。');
             // 実際の編集機能を実装
         }
 
-         window.deleteLocation = function(locationId) {
+        function deleteLocation(locationId) {
             if (confirm('この勤務地を削除してもよろしいですか？')) {
                 // 実際の削除機能を実装
                 alert('勤務地ID ' + locationId + ' が削除されました。');
                 loadLocations(); // 削除後にリストを更新
-            }
-        }
-        
-        function editCompanyHoliday(holidayId) {
-            alert('現場休日ID ' + holidayId + ' の編集機能はまだ実装されていません。');
-            // 実際の編集機能を実装
-        }
-
-        function deleteCompanyHoliday(holidayId) {
-            if (confirm('この現場休日を削除してもよろしいですか？')) {
-                // 実際の削除機能を実装
-                alert('現場休日ID ' + holidayId + ' が削除されました。');
-                loadCompanyHolidays(); // 削除後にリストを更新
             }
         }
 
