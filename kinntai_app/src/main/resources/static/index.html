@@ -1862,14 +1862,14 @@ row.appendChild(workHoursCell);
             }
         }
         // 現場休日の編集（IDを渡し、編集フォームを表示するなど）
-        function editCompanyHoliday(holidayId) {
+         window.editCompanyHoliday = function(holidayId) {
             // alert('現場休日ID ' + holidayId + ' の編集機能はまだ実装されていません。'); // 既存のアラートは削除またはコメントアウト
             // TODO: 実際の編集機能を実装 - 例: 編集用モーダルフォームを表示し、GET /api/company-holidays/{id} でデータを取得、PUT /api/company-holidays/{id} で更新
             showHolidaySuccess('現場休日ID ' + holidayId + ' の編集機能を開始します (未実装)。');
         }
 
  // 会社休日の削除
-async function deleteCompanyHoliday(holidayId) {
+	window.deleteCompanyHoliday = 	async function (holidayId) {
     console.log("deleteCompanyHoliday function called for ID:", holidayId); // ★この行を追加
     if (!confirm('この会社休日を削除してもよろしいですか？')) {
         return;
@@ -1998,12 +1998,12 @@ async function deleteCompanyHoliday(holidayId) {
             }
         }
 
-        function editLocation(locationId) {
+         window.editLocation = function(locationId) {
             alert('勤務地ID ' + locationId + ' の編集機能はまだ実装されていません。');
             // 実際の編集機能を実装
         }
 
-        function deleteLocation(locationId) {
+         window.deleteLocation = function(locationId) {
             if (confirm('この勤務地を削除してもよろしいですか？')) {
                 // 実際の削除機能を実装
                 alert('勤務地ID ' + locationId + ' が削除されました。');
