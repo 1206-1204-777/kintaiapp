@@ -3,6 +3,10 @@ package com.example.kinntai.service.impl;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,14 +18,22 @@ import com.example.kinntai.entity.User;
 import com.example.kinntai.entity.UserRole;
 import com.example.kinntai.repository.UserRepository;
 import com.example.kinntai.service.AuthService;
+import com.example.kinntai.util.JwtUtil;
 
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @Service
 public class AuthServiceImpl implements AuthService {
 
 	@Autowired
+	private AuthenticationManager authenticationManager;
+	@Autowired
 	private UserRepository userRepository;
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+	@Autowired
+	private JwtUtil jwtUtil;
 
 	@Override
 	@Transactional
@@ -35,66 +47,48 @@ public class AuthServiceImpl implements AuthService {
 		String encodedPassword = passwordEncoder.encode(request.getPassword());
 
 		// 新しいユーザーを作成と保存
-		User user = new User();
-		
-		user.setUsername(request.getUsername());
-		user.setEmail(request.getEmail());
-		user.setPassword(encodedPassword); // BCryptでエンコードされたパスワード
-		user.setRole(UserRole.USER);
+		User newUser = User.builder()
+				.username(request.getUsername())
+				.email(request.getEmail())
+				.password(encodedPassword)
+				.role(UserRole.USER)
+				.build();
 
-		if (request.getStartTime() != null || request.getEndTime() != null) {
-			user.setDefaultStartTime((request.getStartTime()));
-			user.setDefaultEndTime(request.getEndTime());
-		}
-		User savedUser = userRepository.save(user);
+		User savedUser = userRepository.save(newUser);
+		/*登録後に自動ログイン
+		 * トークンを返す*/
+		String jwt = jwtUtil.generateToken(savedUser.getUsername());
 
-		// レスポンスの作成
-		UserResponse response = new UserResponse();
-		response.setUserId(savedUser.getId());
-		response.setUsername(savedUser.getUsername());
-		response.setEmail(savedUser.getEmail());
-		response.setStartTime(savedUser.getDefaultStartTime());
-		response.setEndTime(savedUser.getDefaultEndTime());
-		response.setToken("dummy-token-" + savedUser.getId());
-
-		// 勤務地情報が設定されている場合はそれも含める
-		if (savedUser.getLocation() != null) {
-			response.setLocationId(savedUser.getLocation().getId());
-			response.setLocationName(savedUser.getLocation().getName());
-		}
-
-		return response;
+		return UserResponse.builder()
+				.userId(savedUser.getId())
+				.username(savedUser.getUsername())
+				.email(savedUser.getEmail())
+				.role(savedUser.getRole())
+				.token(jwt)
+				.build();
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public UserResponse login(LoginRequest request) {
 		try {
-			// ユーザーを検索
-			User user = userRepository.findByUsername(request.getUsername())
-					.orElseThrow(() -> new RuntimeException("ユーザー名またはパスワードが正しくありません"));
 
-			// パスワードの検証 - 開発中はコメントアウトして単純化
-			// if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-			//     throw new RuntimeException("ユーザー名またはパスワードが正しくありません");
-			// }
+			/*トークン認証*/
+			Authentication authentication = authenticationManager.authenticate(
+					new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+			SecurityContextHolder.getContext().setAuthentication(authentication);//認証に成功したらコンテキスト（設定）に格納
 
-			// レスポンスの作成
-			UserResponse response = new UserResponse();
-			response.setUserId(user.getId());
-			response.setUsername(user.getUsername());
-			response.setEmail(user.getEmail());
-			response.setToken("dummy-token-" + user.getId());
-
-			// 勤務地情報が設定されている場合はそれも含める
-			if (user.getLocation() != null) {
-				response.setLocationId(user.getLocation().getId());
-				response.setLocationName(user.getLocation().getName());
-			}
-
-			return response;
+			User userDetails = (User) authentication.getPrincipal();
+			String jwt = jwtUtil.generateToken(userDetails.getUsername());//トークン発行
+			return UserResponse.builder()
+					.userId(userDetails.getId())
+					.username(userDetails.getUsername())
+					.email(userDetails.getEmail())
+					.role(userDetails.getRole())
+					.token(jwt)
+					.build();
 		} catch (Exception e) {
-			System.err.println("ログインエラー: " + e.getMessage());
+			log.error("ログインエラー: " + e.getMessage());
 			e.printStackTrace();
 			throw e;
 		}
