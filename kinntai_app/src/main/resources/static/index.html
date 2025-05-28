@@ -437,9 +437,17 @@
                 padding: 8px 10px;
             }
 
+            /* ボタンサイズの調整 */
             button {
                 padding: 8px 15px;
                 min-width: 80px;
+                font-size: 14px;
+            }
+
+            /* 出勤・退勤ボタンのサイズ調整 */
+            .clock-in-button, .clock-out-button {
+                padding: 10px 20px;
+                font-size: 14px;
             }
 
             .tab-item {
@@ -458,6 +466,59 @@
                 padding: 5px 8px;
                 font-size: 12px;
             }
+
+            /* フォーム内のボタン */
+            .button-container button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+
+            /* ログアウトボタン */
+            .logout-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            /* タブのサイズ調整 */
+            .tabs {
+                gap: 2px;
+            }
+
+            .tab-item {
+                padding: 6px 12px;
+                font-size: 13px;
+                margin-right: 2px;
+            }
+
+            /* 入力フィールドのサイズ調整 */
+            input, select, textarea {
+                padding: 8px;
+                font-size: 14px;
+            }
+
+            /* 時刻表示のサイズ調整 */
+            .time-display {
+                font-size: 20px;
+            }
+
+            /* ステータス表示のサイズ調整 */
+            .attendance-status {
+                font-size: 16px;
+                padding: 8px;
+            }
+
+            /* 見出しのサイズ調整 */
+            h2 {
+                font-size: 18px;
+            }
+
+            h3 {
+                font-size: 16px;
+            }
+
+            h4 {
+                font-size: 14px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -468,10 +529,20 @@
             .button-container {
                 flex-direction: column;
                 align-items: stretch;
+                gap: 8px;
             }
 
-            button {
+            .button-container button {
                 width: 100%;
+            }
+
+            /* 特に小さい画面では出勤・退勤ボタンを横並びに */
+            .button-container:has(.clock-in-button) {
+                flex-direction: row;
+            }
+
+            .button-container:has(.clock-in-button) button {
+                flex: 1;
             }
 
             .time-display {
@@ -486,6 +557,37 @@
             th, td {
                 padding: 6px 8px;
                 font-size: 12px;
+            }
+
+            /* ナビゲーションボタンのさらなる調整 */
+            .mockup-nav button {
+                padding: 6px 8px;
+                font-size: 11px;
+                min-width: auto;
+            }
+
+            /* ログアウトボタンの調整 */
+            .logout-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+
+            /* 入力フィールドの調整 */
+            input, select, textarea {
+                padding: 6px;
+                font-size: 14px;
+            }
+
+            /* ボタンの最小化 */
+            button {
+                padding: 6px 12px;
+                font-size: 13px;
+                min-width: auto;
+            }
+
+            td button {
+                padding: 4px 6px;
+                font-size: 11px;
             }
         }
 
@@ -2235,12 +2337,12 @@ window.deleteCompanyHoliday = async function(holidayId) {
             }
         }
 
-        function editLocation(locationId) {
+        window.editLocation = function(locationId) {
             alert('勤務地ID ' + locationId + ' の編集機能はまだ実装されていません。');
             // 実際の編集機能を実装
         }
 
-        function deleteLocation(locationId) {
+        window.deleteLocation = function(locationId) {
             if (confirm('この勤務地を削除してもよろしいですか？')) {
                 // 実際の削除機能を実装
                 alert('勤務地ID ' + locationId + ' が削除されました。');
