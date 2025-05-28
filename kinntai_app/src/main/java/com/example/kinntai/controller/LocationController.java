@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,8 +57,7 @@ public class LocationController {
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteLocation(@PathVariable Long id,
-			@AuthenticationPrincipal User currentUser) {
+	public ResponseEntity<Void> deleteLocation(@PathVariable Long id, User currentUser) {
 		logger.info("DELETE /api/locations/{} called by user: {}", id,
 				currentUser != null ? currentUser.getUsername() : "Unknown");
 		try {

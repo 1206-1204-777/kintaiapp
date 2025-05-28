@@ -2342,13 +2342,47 @@ window.deleteCompanyHoliday = async function(holidayId) {
             // 実際の編集機能を実装
         }
 
-        window.deleteLocation = function(locationId) {
-            if (confirm('この勤務地を削除してもよろしいですか？')) {
-                // 実際の削除機能を実装
-                alert('勤務地ID ' + locationId + ' が削除されました。');
-                loadLocations(); // 削除後にリストを更新
+window.deleteLocation = async function(locationId) {
+    if (!confirm('この勤務地を削除してもよろしいですか？')) {
+        return;
+    }
+
+    try {
+        clearLocationMessages(); // 勤務地登録画面のメッセージクリア
+
+        // ログインユーザーIDまたはトークンをリクエストに含める必要があるが、
+        // 現時点ではサーバー側で @AuthenticationPrincipal を使って取得するため、
+        // ここで explicitly 送信する必要はない (JWTが導入されたらAuthorizationヘッダーを使う)
+        
+        const response = await fetchWithTimeout(`/api/locations/${locationId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+                // JWT 導入後: 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
             }
+        });
+
+        if (response.ok) {
+            showLocationSuccess('勤務地が削除されました');
+            await loadLocations(); // 削除後にリストを更新
+        } else if (response.status === 401) {
+            showLocationError('認証が必要です。再度ログインしてください。');
+            // 必要に応じてログインページへリダイレクト
+            // window.location.href = 'login.html';
+        } else if (response.status === 403) {
+            showLocationError('この勤務地を削除する権限がありません。');
+        } else if (response.status === 404) {
+            showLocationError('指定された勤務地が見つかりません。');
+        } else {
+            const errorData = await response.json().catch(() => null);
+            showLocationError(errorData?.message || `勤務地の削除に失敗しました (${response.status})`);
         }
+    } catch (error) {
+        console.error('勤務地削除エラー:', error);
+        showLocationError('サーバーとの通信中にエラーが発生しました');
+    }
+}
+	
 
         // 画面切り替え
         function showScreen(screenId) {
