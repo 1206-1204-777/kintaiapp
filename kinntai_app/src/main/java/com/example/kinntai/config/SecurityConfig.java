@@ -47,7 +47,7 @@ public class SecurityConfig {
                     "/error" // エラーページへのアクセスも許可
                 ).permitAll()
                 // その他の全ての /api/** パスは認証が必要 (JWTフィルターで認証される)
-                .requestMatchers("/api/**").authenticated()
+                .requestMatchers("/api/**").hasAnyRole("USER","ADMIN")
                 // 上記以外のすべてのリクエストは認証が必要 (SPAの場合)
                 // ただし、/api/** 以外のHTMLなどへのアクセスは /index.html で許可済み
                 .anyRequest().authenticated()

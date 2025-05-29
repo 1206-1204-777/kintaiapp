@@ -1268,62 +1268,72 @@
         let refreshTimer = null;
         let currentUserId = null;
         let currentUsername = null;
+        let currentUserRole = null; // ユーザーロールも追加
+        let jwtToken = null; // JWTトークンも追加
 
-        // 認証チェックと初期化
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                // テスト用のユーザーIDとユーザー名を設定（実際の環境では認証システムから取得）
-                currentUserId = localStorage.getItem('userId') || '1';
-                currentUsername = localStorage.getItem('username') || '山田 太郎';
-                
-                // ローカルストレージに保存
-                localStorage.setItem('userId', currentUserId);
-                localStorage.setItem('username', currentUsername);
-
-                const userDisplayElement = document.getElementById('userDisplay');
-                if (userDisplayElement) {
-                    userDisplayElement.textContent = currentUsername;
-                }
-
-                // 時計の初期化と更新
-                updateClock();
-                setInterval(updateClock, 1000);
-
-                // 自動更新タイマーの設定（30秒ごとに状態確認）
-                startAutoRefresh();
-
-                // 初期データ読み込み
-                initializeApp();
-
-                const monthSelectElement = document.getElementById('monthSelect');
-                if (monthSelectElement) {
-                    monthSelectElement.value = getCurrentMonth();
-                }
-                const exportMonthSelectElement = document.getElementById('export-year-month');
-                if (exportMonthSelectElement) {
-                    exportMonthSelectElement.value = getCurrentMonth();
-                }
-                 const exportDeptMonthSelectElement = document.getElementById('export-dept-year-month');
-                if (exportDeptMonthSelectElement) {
-                    exportDeptMonthSelectElement.value = getCurrentMonth();
-                }
-                 const exportAllMonthSelectElement = document.getElementById('export-all-year-month');
-                if (exportAllMonthSelectElement) {
-                    exportAllMonthSelectElement.value = getCurrentMonth();
-                }
-                const monthSelectReportElement = document.getElementById('monthSelectReport');
-                if (monthSelectReportElement) {
-                    monthSelectReportElement.value = getCurrentMonth();
-                }
-
-
-                setupEventListeners();
-            } catch (error) {
-                console.error('初期化エラー:', error);
-                showAttendanceError('ページの初期化中にエラーが発生しました。ページをリロードしてください。');
+       // 認証チェックと初期化
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            // ローカルストレージからJWTトークンを取得
+            jwtToken = localStorage.getItem('jwtToken');
+            
+            // JWTトークンがない場合は、ログインページへリダイレクト
+            if (!jwtToken) {
+                window.location.href = 'login.html';
+                return; // ここで処理を中断
             }
-        });
 
+            // JWTトークンが存在する場合のみ、ユーザー情報を取得し、アプリケーションを初期化
+            currentUserId = localStorage.getItem('userId');
+            currentUsername = localStorage.getItem('username');
+            currentUserRole = localStorage.getItem('userRole');
+
+            // ユーザー情報が不完全な場合もログインページへリダイレクト
+            if (!currentUserId || !currentUsername || !currentUserRole) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+                return; // ここで処理を中断
+            }
+
+            const userDisplayElement = document.getElementById('userDisplay');
+            if (userDisplayElement) {
+                userDisplayElement.textContent = currentUsername;
+            }
+
+            updateClock();
+            setInterval(updateClock, 1000);
+            startAutoRefresh();
+            initializeApp(); // ここで初めてAPI呼び出しを含む初期化を実行
+
+            const monthSelectElement = document.getElementById('monthSelect');
+            if (monthSelectElement) {
+                monthSelectElement.value = getCurrentMonth();
+            }
+            const exportMonthSelectElement = document.getElementById('export-year-month');
+            if (exportMonthSelectElement) {
+                exportMonthSelectElement.value = getCurrentMonth();
+            }
+            const exportDeptMonthSelectElement = document.getElementById('export-dept-year-month');
+            if (exportDeptMonthSelectElement) {
+                exportDeptMonthSelectElement.value = getCurrentMonth();
+            }
+            const exportAllMonthSelectElement = document.getElementById('export-all-year-month');
+            if (exportAllMonthSelectElement) {
+                exportAllMonthSelectElement.value = getCurrentMonth();
+            }
+            const monthSelectReportElement = document.getElementById('monthSelectReport');
+            if (monthSelectReportElement) {
+                monthSelectReportElement.value = getCurrentMonth();
+            }
+
+            setupEventListeners();
+        } catch (error) {
+            console.error('初期化エラー:', error);
+            showAttendanceError('ページの初期化中にエラーが発生しました。ページをリロードしてください。');
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    });
         // アプリケーション初期化
         async function initializeApp() {
             try {
@@ -2476,11 +2486,27 @@ window.deleteLocation = async function(locationId) {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeout);
             
+            if (jwtToken) {
+                if (!options.headers) {
+                    options.headers = {};
+                }
+                options.headers['Authorization'] = `Bearer ${jwtToken}`;
+            }
+
             try {
                 const response = await fetch(url, {
                     ...options,
                     signal: controller.signal
                 });
+
+                if (response.status === 401 || response.status === 403) {
+                    console.warn('認証エラーまたは権限エラー。トークンが期限切れの可能性があります。');
+                    alert('セッションが切れました。再度ログインしてください。');
+                    stopAutoRefresh();
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                    throw new Error('Authentication/Authorization Error'); 
+                }
                 return response;
             } finally {
                 clearTimeout(id);

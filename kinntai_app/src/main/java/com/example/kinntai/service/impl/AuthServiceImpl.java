@@ -7,6 +7,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
 		User savedUser = userRepository.save(newUser);
 		/*登録後に自動ログイン
 		 * トークンを返す*/
-		String jwt = jwtUtil.generateToken(savedUser.getUsername());
+		String jwt = jwtUtil.generateToken(savedUser.getUsername(),savedUser.getRole().name());
 
 		return UserResponse.builder()
 				.userId(savedUser.getId())
@@ -77,9 +78,14 @@ public class AuthServiceImpl implements AuthService {
 			Authentication authentication = authenticationManager.authenticate(
 					new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 			SecurityContextHolder.getContext().setAuthentication(authentication);//認証に成功したらコンテキスト（設定）に格納
+			
+			UserDetails principal = (UserDetails) authentication.getPrincipal();
 
-			User userDetails = (User) authentication.getPrincipal();
-			String jwt = jwtUtil.generateToken(userDetails.getUsername());//トークン発行
+			User userDetails = userRepository.findByUsername(principal.getUsername())
+					.orElseThrow(() -> new RuntimeException("認証されたユーザーが見つかりません。"));
+			
+			/*jwtトークン作成*/
+			String jwt = jwtUtil.generateToken(userDetails.getUsername(),userDetails.getRole().name());//トークン発行
 			return UserResponse.builder()
 					.userId(userDetails.getId())
 					.username(userDetails.getUsername())
