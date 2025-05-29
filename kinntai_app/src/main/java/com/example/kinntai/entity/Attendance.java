@@ -54,7 +54,10 @@ public class Attendance {
 	private Long totalWorkMin; // 型はLongに変更
 
 	@Column(name = "total_break_min") // データベースのカラム名に合わせる
-	private Long totalBreakMin; // 型はLongに変更
+	private Long totalBreakMin;
+
+	@Column(name = "overtime_minutes")
+	private Long overtimeMinutes;
 
 	public Attendance(User user, LocalDate date) {
 		this.user = user;

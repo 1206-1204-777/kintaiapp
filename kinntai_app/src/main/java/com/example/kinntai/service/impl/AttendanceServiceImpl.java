@@ -16,8 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.kinntai.dto.AttendanceResponse;
 import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
+import com.example.kinntai.entity.Location;
 import com.example.kinntai.entity.User;
 import com.example.kinntai.repository.AttendanceRepository;
+import com.example.kinntai.repository.LocationRepository;
 import com.example.kinntai.repository.UserRepository;
 import com.example.kinntai.service.AttendanceService;
 
@@ -29,15 +31,17 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 	@Autowired
 	private UserRepository userRepository;
+	@Autowired
+	private LocationRepository locationRepository;
 
 	/**
 	 * 出勤処理
 	 */
 	@Override
 	@Transactional
-	public Attendance clockIn(Long userId) {
+	public Attendance clockIn(User userId) {
 		try {
-			User user = userRepository.findById(userId)
+			User user = userRepository.findById(userId.getId())
 					.orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
 
 			LocalDate today = LocalDate.now();
@@ -54,11 +58,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 			// 出勤時刻を設定
 			attendance.setClockIn(LocalDateTime.now());
 
-			// ★修正: totalBreakMinutes の代わりに totalBreakMin を初期設定★
 			if (attendance.getTotalBreakMin() == null) {
 				attendance.setTotalBreakMin(0L);
 			}
-			// ★修正: totalWorkMinutes の代わりに totalWorkMin を初期設定★
 			if (attendance.getTotalWorkMin() == null) {
 				attendance.setTotalWorkMin(0L);
 			}
@@ -76,9 +78,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 	 */
 	@Override
 	@Transactional
-	public Attendance clockOut(Long userId) {
+	public Attendance clockOut(User userId) {
 		try {
-			User user = userRepository.findById(userId)
+			User user = userRepository.findById(userId.getId())
 					.orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
 
 			LocalDate today = LocalDate.now();
@@ -86,6 +88,10 @@ public class AttendanceServiceImpl implements AttendanceService {
 			// 当日の勤怠記録を取得
 			Attendance attendance = attendanceRepository.findByUserAndDate(user, today)
 					.orElseThrow(() -> new RuntimeException("本日の出勤記録がありません"));
+
+			// 定時時刻を取得
+			Location location = locationRepository.findByName(null)
+					.orElseThrow(() -> new RuntimeException("定時時刻が登録されていません。"));
 
 			// 出勤していない場合はエラー
 			if (attendance.getClockIn() == null) {
@@ -99,10 +105,12 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 			// 退勤時刻を設定
 			attendance.setClockOut(LocalDateTime.now());
+			attendance.setUpdatedAt(LocalDateTime.now());
 
 			// 1. 総勤務時間（出勤から退勤までの時間）を計算
 			// Duration.between() は LocalDateTime 型の比較に使用します。
-			long totalDurationMinutes = Duration.between(attendance.getClockIn(), attendance.getClockOut()).toMinutes();
+			long totalDurationMinutes = Duration.between(
+					attendance.getClockIn(), attendance.getClockOut()).toMinutes();
 
 			// 2. 一律1時間（60分）の休憩時間を設定
 			long fixedBreakMinutes = 60L;
@@ -112,6 +120,15 @@ public class AttendanceServiceImpl implements AttendanceService {
 			// 休憩時間を引いた結果が負にならないように Math.max を使用
 			long actualWorkMinutes = Math.max(0, totalDurationMinutes - fixedBreakMinutes);
 			attendance.setTotalWorkMin(actualWorkMinutes); // totalWorkMinutes に実労働時間を設定
+
+			long locationTime = Duration.between(
+					location.getStartTime(), location.getEndTime()).toMinutes();
+
+			if (locationTime <= totalDurationMinutes) {
+				attendance.setOvertimeMinutes(0L);
+			}
+			long overtime = Math.max(0, totalDurationMinutes - locationTime);
+			attendance.setOvertimeMinutes(overtime);
 
 			return attendanceRepository.save(attendance);
 		} catch (Exception e) {
@@ -125,9 +142,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 	 * 現在の勤務状況を取得
 	 */
 	@Override
-	public AttendanceResponse getAttendanceStatus(Long userId) {
+	public AttendanceResponse getAttendanceStatus(User userId) {
 		try {
-			User user = userRepository.findById(userId)
+			User user = userRepository.findById(userId.getId())
 					.orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
 
 			LocalDate today = LocalDate.now();
@@ -136,7 +153,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 			Optional<Attendance> attendanceOpt = attendanceRepository.findByUserAndDate(user, today);
 
 			AttendanceResponse response = new AttendanceResponse();
-			response.setUserId(userId);
+			response.setUserId(userId.getId());
 			response.setDate(today);
 
 			if (attendanceOpt.isPresent()) {
@@ -175,8 +192,8 @@ public class AttendanceServiceImpl implements AttendanceService {
 	 * 特定の日の勤怠情報を取得
 	 */
 	@Override
-	public Optional<Attendance> getAttendanceByDate(Long userId, LocalDate date) {
-		User user = userRepository.findById(userId)
+	public Optional<Attendance> getAttendanceByDate(User userId, LocalDate date) {
+		User user = userRepository.findById(userId.getId())
 				.orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
 
 		return attendanceRepository.findByUserAndDate(user, date);
@@ -186,21 +203,21 @@ public class AttendanceServiceImpl implements AttendanceService {
 	 * 月次の勤怠情報を取得
 	 */
 	@Override
-	public List<Attendance> getMonthlyAttendance(Long userId, int year, int month) {
+	public List<Attendance> getMonthlyAttendance(User userId, int year, int month) {
 		YearMonth yearMonth = YearMonth.of(year, month);
 		LocalDate startDate = yearMonth.atDay(1);
 		LocalDate endDate = yearMonth.atEndOfMonth();
 
-		return attendanceRepository.findByUserIdAndDateBetweenOrderByDateAsc(userId, startDate, endDate);
+		return attendanceRepository.findByUserIdAndDateBetweenOrderByDateAsc(userId.getId(), startDate, endDate);
 	}
 
 	/**
 	 * 月次の勤怠情報を取得（文字列指定）
 	 */
 	@Override
-	public List<Attendance> getMonthlyAttendance(Long userId, String yearMonth) {
+	public List<Attendance> getMonthlyAttendance(User userId, String yearMonth) {
 		try {
-			System.out.println("勤怠履歴取得: userId=" + userId + ", month=" + yearMonth);
+			System.out.println("勤怠履歴取得: userId.getId().getId=" + userId.getId() + ", month=" + yearMonth);
 
 			// yearMonth 形式は "YYYY-MM"
 			String[] parts = yearMonth.split("-");
@@ -223,9 +240,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 	 * 期間内の勤怠情報を月曜～日曜の週で生成（存在しない日も含める）
 	 */
 	@Override
-	public List<Attendance> generateWeeklyAttendances(Long userId, LocalDate startDate, LocalDate endDate) {
+	public List<Attendance> generateWeeklyAttendances(User userId, LocalDate startDate, LocalDate endDate) {
 		List<Attendance> attendances = attendanceRepository.findByUserIdAndDateBetweenOrderByDateAsc(
-				userId, startDate, endDate);
+				userId.getId(), startDate, endDate);
 
 		List<Attendance> result = new ArrayList<>();
 
@@ -241,7 +258,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 			if (attendance == null) {
 				User user = new User();
-				user.setId(userId);
+				user.setId(userId.getId());
 
 				attendance = new Attendance();
 				attendance.setUser(user);
@@ -266,9 +283,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 	}
 
 	@Override
-	public List<AttendanceResponse> getAttendanceUser(Long userId) {
+	public List<AttendanceResponse> getAttendanceUser(User userId) {
 
-		return attendanceRepository.findByUserId(userId)
+		return attendanceRepository.findByUserId(userId.getId())
 				.stream()
 				.map(AttendanceResponse::fromEntity)
 				.collect(Collectors.toList());
@@ -278,13 +295,13 @@ public class AttendanceServiceImpl implements AttendanceService {
 	/*勤怠時刻の修正
 	 * Attendances登録された定時データを修正*/
 	@Override
-	public void upDateUserAttendance(Long userId, UserAttendanceUpdateRequestDto request)
+	public void upDateUserAttendance(User userId, UserAttendanceUpdateRequestDto request)
 			throws IllegalAccessException {
-		userRepository.findById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("指定されたユーザーが存在しません。" + userId));
+		userRepository.findById(userId.getId())
+				.orElseThrow(() -> new IllegalArgumentException("指定されたユーザーが存在しません。" + userId.getId()));
 
 		/*時刻とユーザーidで修正対象を検索*/
-		Optional<Attendance> existingAttendanceOptional = attendanceRepository.findByUserIdAndDate(userId,
+		Optional<Attendance> existingAttendanceOptional = attendanceRepository.findByUserIdAndDate(userId.getId(),
 				request.getDate());
 		/*修正対象があれば修正をする*/
 		Attendance attendance;
@@ -300,12 +317,12 @@ public class AttendanceServiceImpl implements AttendanceService {
 		} else {
 			attendance.setClockIn(null);//値が入力されてない場合はnullを格納
 		}
-		
-		if(request.getEndTime() != null) {
+
+		if (request.getEndTime() != null) {
 			LocalDateTime clockOutDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
 			/*退勤時刻が出勤時刻より前（０時過ぎ）の場合は翌日の勤怠として扱う*/
-			if(attendance.getClockIn() != null && request.getEndTime().isBefore(request.getStartTime())) {
-				
+			if (attendance.getClockIn() != null && request.getEndTime().isBefore(request.getStartTime())) {
+
 			}
 		}
 

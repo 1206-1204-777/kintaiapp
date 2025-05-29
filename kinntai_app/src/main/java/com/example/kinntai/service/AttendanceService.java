@@ -7,23 +7,24 @@ import java.util.Optional;
 import com.example.kinntai.dto.AttendanceResponse;
 import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
+import com.example.kinntai.entity.User;
 
 public interface AttendanceService {
 
 	/**
 	 * 出勤処理
 	 */
-	Attendance clockIn(Long userId);
+	Attendance clockIn(User userId);
 
 	/**
 	 * 退勤処理
 	 */
-	Attendance clockOut(Long userId);
+	Attendance clockOut(User userId);
 
 	/**
 	 * 現在の勤務状況を取得
 	 */
-	AttendanceResponse getAttendanceStatus(Long userId);
+	AttendanceResponse getAttendanceStatus(User userId);
 
 	//退勤していないユーザーのリスト作成
 	List<AttendanceResponse> getUnclockedUsersToday() throws RuntimeException;
@@ -31,28 +32,28 @@ public interface AttendanceService {
 	/**
 	 * 特定の日の勤怠情報を取得
 	 */
-	Optional<Attendance> getAttendanceByDate(Long userId, LocalDate date);
+	Optional<Attendance> getAttendanceByDate(User userId, LocalDate date);
 
 	/**
 	 * 月次の勤怠情報を取得
 	 */
-	List<Attendance> getMonthlyAttendance(Long userId, int year, int month);
+	List<Attendance> getMonthlyAttendance(User userId, int year, int month);
 
 	/**
 	 * 月次の勤怠情報を取得（文字列指定）
 	 */
-	List<Attendance> getMonthlyAttendance(Long userId, String yearMonth);
+	List<Attendance> getMonthlyAttendance(User userId, String yearMonth);
 
 	/**
 	 * 期間内の勤怠情報を月曜～日曜の週で生成（存在しない日も含める）
 	 */
-	List<Attendance> generateWeeklyAttendances(Long userId, LocalDate startDate, LocalDate endDate);
+	List<Attendance> generateWeeklyAttendances(User userId, LocalDate startDate, LocalDate endDate);
 
 	/*ユーザー情報の取得*/
 	List<AttendanceResponse> getAllUser();
 
-	List<AttendanceResponse> getAttendanceUser(Long userId);
+	List<AttendanceResponse> getAttendanceUser(User userId);
 	
-	void upDateUserAttendance(Long userId,UserAttendanceUpdateRequestDto request) throws IllegalAccessException;
+	void upDateUserAttendance(User userId,UserAttendanceUpdateRequestDto request) throws IllegalAccessException;
 
 }

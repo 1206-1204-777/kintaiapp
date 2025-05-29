@@ -39,7 +39,8 @@ public class Location {
 	@Column(nullable = false)
 	private LocalTime endTime;
 
-	@Column(name = "created_by")
-	private String createdBy;
+//	@ManyToOne(fetch = FetchType.LAZY)
+	@Column(name = "created_by",unique = true)
+	private Long createdBy;
 	
 }

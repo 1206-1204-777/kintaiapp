@@ -1215,8 +1215,8 @@
 <table>
 <thead>
 <tr>
-<th>登録者</th>
-<th>ID</th>
+<th>登録者ID</th>
+<th>勤務地ID</th>
 <th>勤務地名</th>
 <th>標準出勤時間</th>
 <th>標準退勤時間</th>
@@ -2257,7 +2257,7 @@ window.deleteCompanyHoliday = async function(holidayId) {
                     name: formData.get('name'),
                     startTime: formData.get('startTime'),
                     endTime: formData.get('endTime'),
-                    createdBy: currentUsername || 'システム'
+                    createdBy: Number(localStorage.getItem("userId")) || 'システム'
                 };
 
                 clearLocationMessages();

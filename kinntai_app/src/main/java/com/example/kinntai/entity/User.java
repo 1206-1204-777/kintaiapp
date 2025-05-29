@@ -3,6 +3,7 @@ package com.example.kinntai.entity;
 import java.time.LocalTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -13,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import org.springframework.security.core.GrantedAuthority;
@@ -57,6 +59,9 @@ public class User implements UserDetails{
 
 	@Column(name = "default_end_time")
 	private LocalTime defaultEndTime;
+	
+	@OneToMany(mappedBy = "createdBy")
+    private List<Location> locations;
 
 	public User(String username, String password) {
 		this.username = username;
