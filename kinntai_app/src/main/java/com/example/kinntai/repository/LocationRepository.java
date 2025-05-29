@@ -20,6 +20,7 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
 	Optional<Location> findTopByCreatedByOrderByIdDesc(User createdBy);
 
 	Optional<Location> findByName(String name);
+	Optional<Location> findByCreatedBy(Long id);
 
 
 }

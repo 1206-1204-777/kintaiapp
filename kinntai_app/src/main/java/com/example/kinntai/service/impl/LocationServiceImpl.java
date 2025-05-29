@@ -43,7 +43,10 @@ public class LocationServiceImpl implements LocationService {
 			throw new IllegalArgumentException("勤務地名は必須です");
 		}
 
-		Optional<User> user = userRepository.findByUsername(request.getName());
+		Optional<Location> user = locationRepository.findByCreatedBy(request.getCreatedBy());
+		if (user.isPresent()) {
+			throw new IllegalArgumentException("同じIDのユーザーIDで勤務地は1件しか登録できません。");
+		}
 
 		LocalTime startTime = LocalTime.parse(request.getStartTime(), TIME_FORMATTER);
 		LocalTime endTime = LocalTime.parse(request.getEndTime(), TIME_FORMATTER);
@@ -106,7 +109,7 @@ public class LocationServiceImpl implements LocationService {
 	 */
 	@Override
 	@Transactional // トランザクション管理
-	public void deleteLocation(@PathVariable Long id,User currentUser) {
+	public void deleteLocation(@PathVariable Long id, User currentUser) {
 
 		if (currentUser == null) {
 			// ログインしていない場合（通常はSpring Securityで認証済みなのでここには来ないはずですが念のため）
@@ -121,14 +124,14 @@ public class LocationServiceImpl implements LocationService {
 					return new EntityNotFoundException("Location not found with ID: " + id); // EntityNotFoundExceptionをスロー
 				});
 
-//		/*管理者か確認*/
-//		boolean isAdmin = (currentUser.getRole() == UserRole.ADMIN);
-//
-//		/*管理者または登録ユーザーのみが削除可能*/
-//		if (!isAdmin && !location.getCreatedBy().equals(currentUser.getUsername())) {
-//			logger.warn("管理者または登録したユーザーではありません" + currentUser.getUsername(), id);
-//			throw new AccessDeniedException("削除権限がありません。");
-//		}
+		//		/*管理者か確認*/
+		//		boolean isAdmin = (currentUser.getRole() == UserRole.ADMIN);
+		//
+		//		/*管理者または登録ユーザーのみが削除可能*/
+		//		if (!isAdmin && !location.getCreatedBy().equals(currentUser.getUsername())) {
+		//			logger.warn("管理者または登録したユーザーではありません" + currentUser.getUsername(), id);
+		//			throw new AccessDeniedException("削除権限がありません。");
+		//		}
 		// 削除処理
 		locationRepository.deleteById(id);
 		logger.info("deleteBy{}" + id, currentUser.getUsername());

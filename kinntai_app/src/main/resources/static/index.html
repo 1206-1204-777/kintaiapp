@@ -2364,7 +2364,7 @@ window.deleteLocation = async function(locationId) {
         // 現時点ではサーバー側で @AuthenticationPrincipal を使って取得するため、
         // ここで explicitly 送信する必要はない (JWTが導入されたらAuthorizationヘッダーを使う)
         
-        const response = await fetchWithTimeout(`/api/locations/${locationId}`, {
+        const response = await fetchWithTimeout(`/api/locations/${locationId}?currentUserId=${currentUserId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
