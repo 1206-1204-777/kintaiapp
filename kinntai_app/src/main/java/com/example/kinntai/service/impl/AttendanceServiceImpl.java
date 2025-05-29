@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -295,21 +296,18 @@ public class AttendanceServiceImpl implements AttendanceService {
 	/*勤怠時刻の修正
 	 * Attendances登録された定時データを修正*/
 	@Override
-	public void upDateUserAttendance(User userId, UserAttendanceUpdateRequestDto request)
+	public Attendance updateUserAttendance(Long userId, UserAttendanceUpdateRequestDto request)
 			throws IllegalAccessException {
-		userRepository.findById(userId.getId())
-				.orElseThrow(() -> new IllegalArgumentException("指定されたユーザーが存在しません。" + userId.getId()));
+		userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("指定されたユーザーが存在しません。" + userId));
 
 		/*時刻とユーザーidで修正対象を検索*/
-		Optional<Attendance> existingAttendanceOptional = attendanceRepository.findByUserIdAndDate(userId.getId(),
+		List<Attendance> existingAttendanceOptional = attendanceRepository.findByUserIdAndDate(userId,
 				request.getDate());
 		/*修正対象があれば修正をする*/
-		Attendance attendance;
-		if (existingAttendanceOptional.isPresent()) {
-			attendance = existingAttendanceOptional.get();
-		} else {
-			throw new IllegalAccessException("指定された日付の勤怠記録が見つかりません。");
-		}
+		Attendance attendance = existingAttendanceOptional.stream()
+				.max(Comparator.comparing(Attendance::getCreatedAt))
+				.orElseThrow(() -> new IllegalAccessException("指定された日付の勤怠記録が見つかりません。"));
 
 		/*勤務開始の修正*/
 		if (request.getStartTime() != null) {
@@ -318,13 +316,19 @@ public class AttendanceServiceImpl implements AttendanceService {
 			attendance.setClockIn(null);//値が入力されてない場合はnullを格納
 		}
 
+		/*退勤時間の修正*/
 		if (request.getEndTime() != null) {
 			LocalDateTime clockOutDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
 			/*退勤時刻が出勤時刻より前（０時過ぎ）の場合は翌日の勤怠として扱う*/
 			if (attendance.getClockIn() != null && request.getEndTime().isBefore(request.getStartTime())) {
-
+				clockOutDateTime = clockOutDateTime.plusDays(1);
 			}
+
+			attendance.setClockOut(clockOutDateTime);
 		}
 
+		attendance.setUpdatedAt(LocalDateTime.now());
+		return attendanceRepository.save(attendance);
 	}
+
 }

@@ -54,6 +54,6 @@ public interface AttendanceService {
 
 	List<AttendanceResponse> getAttendanceUser(User userId);
 	
-	void upDateUserAttendance(User userId,UserAttendanceUpdateRequestDto request) throws IllegalAccessException;
+	Attendance updateUserAttendance(Long userId,UserAttendanceUpdateRequestDto request) throws IllegalAccessException;
 
 }

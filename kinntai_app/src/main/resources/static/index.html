@@ -2079,7 +2079,7 @@ row.appendChild(workHoursCell);
 
                 clearEditMessages();
                 
-                const response = await fetchWithTimeout(`/api/correction-requests/apply/${currentUserId}`, {
+                const response = await fetchWithTimeout(`/api/attendance/update/${currentUserId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
