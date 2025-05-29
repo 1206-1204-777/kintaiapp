@@ -20,27 +20,35 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.kinntai.dto.PersonalHolidayRequest;
 import com.example.kinntai.dto.PersonalHolidayResponse;
 import com.example.kinntai.entity.PersonalHoliday;
-import com.example.kinntai.entity.RequestStatus; // RequestStatus Enumを使用
+import com.example.kinntai.entity.RequestStatus;
 import com.example.kinntai.service.PersonalHolidayService;
-import com.example.kinntai.service.UserService; // ユーザー情報を取得するサービス
+import com.example.kinntai.service.UserService;
 
 @RestController
 @RequestMapping("/api/personal-holidays")
-@CrossOrigin(origins = "*") // CORS対応
+@CrossOrigin(origins = "*")
+/**
+ * 個人休日に関する操作を提供するコントローラークラスです。
+ * ユーザーの個人休日申請、取得、更新、削除などの機能を提供します。
+ */
 public class PersonalHolidayController {
 
     @Autowired
     private PersonalHolidayService personalHolidayService;
 
     @Autowired
-    private UserService userService; // 申請者や承認者のユーザー名を取得するため
+    private UserService userService;
 
-    // 個人休日の申請
+    /**
+     * 個人休日を申請するエンドポイントです。
+     *
+     * @param request 申請内容を含むリクエスト
+     * @return 登録された個人休日の情報またはエラーメッセージ
+     */
     @PostMapping("/apply")
     public ResponseEntity<?> applyPersonalHoliday(@RequestBody PersonalHolidayRequest request) {
         try {
             PersonalHoliday personalHoliday = personalHolidayService.applyPersonalHoliday(request);
-            // レスポンスDTOに変換して返す
             return ResponseEntity.status(HttpStatus.CREATED).body(convertToPersonalHolidayResponse(personalHoliday));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -49,7 +57,12 @@ public class PersonalHolidayController {
         }
     }
 
-    // 特定のユーザーの個人休日申請一覧を取得
+    /**
+     * 指定ユーザーの個人休日申請一覧を取得します。
+     *
+     * @param userId ユーザーID
+     * @return 個人休日のレスポンスリスト
+     */
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<PersonalHolidayResponse>> getPersonalHolidaysByUserId(@PathVariable Long userId) {
         List<PersonalHoliday> holidays = personalHolidayService.getPersonalHolidaysByUserId(userId);
@@ -59,13 +72,18 @@ public class PersonalHolidayController {
         return ResponseEntity.ok(responses);
     }
 
-    // 個人休日申請のステータス更新 (管理者向けAPI)
-    // 例: /api/personal-holidays/{id}/status?status=APPROVED&approverId=1
+    /**
+     * 個人休日申請のステータスを更新します（管理者用）。
+     *
+     * @param id 申請ID
+     * @param status 新しいステータス
+     * @param approverId 承認者のユーザーID
+     * @return 更新後の個人休日レスポンス
+     */
     @PutMapping("/{id}/status")
-    public ResponseEntity<?> updatePersonalHolidayStatus(
-            @PathVariable Long id,
-            @RequestParam String status,
-            @RequestParam Long approverId) {
+    public ResponseEntity<?> updatePersonalHolidayStatus(@PathVariable Long id,
+                                                         @RequestParam String status,
+                                                         @RequestParam Long approverId) {
         try {
             RequestStatus newStatus = RequestStatus.valueOf(status.toUpperCase());
             PersonalHoliday updatedHoliday = personalHolidayService.updatePersonalHolidayStatus(id, newStatus, approverId);
@@ -77,7 +95,13 @@ public class PersonalHolidayController {
         }
     }
 
-    // 個人休日申請のキャンセル (ユーザー自身が申請中のものをキャンセル)
+    /**
+     * 個人休日申請をキャンセルします（ユーザー用）。
+     *
+     * @param id 個人休日申請ID
+     * @param userId ユーザーID
+     * @return 成功または失敗メッセージ
+     */
     @DeleteMapping("/{id}/cancel/user/{userId}")
     public ResponseEntity<?> cancelPersonalHoliday(@PathVariable Long id, @PathVariable Long userId) {
         try {
@@ -98,21 +122,24 @@ public class PersonalHolidayController {
         }
     }
 
-    // PersonalHoliday エンティティを PersonalHolidayResponse DTO に変換するヘルパーメソッド
+    /**
+     * PersonalHolidayエンティティをレスポンスDTOに変換します。
+     *
+     * @param personalHoliday エンティティ
+     * @return レスポンスDTO
+     */
     private PersonalHolidayResponse convertToPersonalHolidayResponse(PersonalHoliday personalHoliday) {
         PersonalHolidayResponse response = new PersonalHolidayResponse();
         response.setId(personalHoliday.getId());
         response.setUserId(personalHoliday.getUser().getId());
-        response.setUsername(personalHoliday.getUser().getUsername()); // 申請者名
+        response.setUsername(personalHoliday.getUser().getUsername());
         response.setHolidayDate(personalHoliday.getHolidayDate());
-        response.setHolidayType(personalHoliday.getHolidayType().name()); // EnumをStringに変換
+        response.setHolidayType(personalHoliday.getHolidayType().name());
         response.setReason(personalHoliday.getReason());
-        response.setStatus(personalHoliday.getStatus().name()); // EnumをStringに変換
-        if (personalHoliday.getApprover() != null) {
-            response.setApproverName(personalHoliday.getApprover().getUsername()); // 承認者名
-        } else {
-            response.setApproverName("-");
-        }
+        response.setStatus(personalHoliday.getStatus().name());
+        response.setApproverName(personalHoliday.getApprover() != null
+                ? personalHoliday.getApprover().getUsername()
+                : "-");
         response.setCreatedAt(personalHoliday.getCreatedAt());
         response.setUpdatedAt(personalHoliday.getUpdatedAt());
         return response;

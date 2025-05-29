@@ -14,13 +14,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.kinntai.dto.AttendanceResponse;
+import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
 import com.example.kinntai.entity.User;
 import com.example.kinntai.repository.AttendanceRepository;
 import com.example.kinntai.repository.UserRepository;
+import com.example.kinntai.service.AttendanceService;
 
 @Service
-public class AttendanceService {
+public class AttendanceServiceImpl implements AttendanceService {
 
 	@Autowired
 	private AttendanceRepository attendanceRepository;
@@ -31,6 +33,7 @@ public class AttendanceService {
 	/**
 	 * 出勤処理
 	 */
+	@Override
 	@Transactional
 	public Attendance clockIn(Long userId) {
 		try {
@@ -50,14 +53,14 @@ public class AttendanceService {
 
 			// 出勤時刻を設定
 			attendance.setClockIn(LocalDateTime.now());
-			
+
 			// ★修正: totalBreakMinutes の代わりに totalBreakMin を初期設定★
 			if (attendance.getTotalBreakMin() == null) {
-			    attendance.setTotalBreakMin(0L);
+				attendance.setTotalBreakMin(0L);
 			}
 			// ★修正: totalWorkMinutes の代わりに totalWorkMin を初期設定★
 			if (attendance.getTotalWorkMin() == null) {
-			    attendance.setTotalWorkMin(0L);
+				attendance.setTotalWorkMin(0L);
 			}
 
 			return attendanceRepository.save(attendance);
@@ -71,6 +74,7 @@ public class AttendanceService {
 	/**
 	 * 退勤処理
 	 */
+	@Override
 	@Transactional
 	public Attendance clockOut(Long userId) {
 		try {
@@ -102,7 +106,7 @@ public class AttendanceService {
 
 			// 2. 一律1時間（60分）の休憩時間を設定
 			long fixedBreakMinutes = 60L;
-			attendance.setTotalBreakMin (fixedBreakMinutes); // totalBreakMinutes に一律60分を設定
+			attendance.setTotalBreakMin(fixedBreakMinutes); // totalBreakMinutes に一律60分を設定
 
 			// 3. 実労働時間（総勤務時間から休憩時間を差し引いたもの）を計算し、totalWorkMinutes に設定
 			// 休憩時間を引いた結果が負にならないように Math.max を使用
@@ -120,6 +124,7 @@ public class AttendanceService {
 	/**
 	 * 現在の勤務状況を取得
 	 */
+	@Override
 	public AttendanceResponse getAttendanceStatus(Long userId) {
 		try {
 			User user = userRepository.findById(userId)
@@ -155,6 +160,7 @@ public class AttendanceService {
 	}
 
 	//退勤していないユーザーのリスト作成
+	@Override
 	public List<AttendanceResponse> getUnclockedUsersToday() throws RuntimeException {
 		LocalDate today = LocalDate.now();
 		List<Attendance> attendanses = attendanceRepository.findClickedOutToday(today);
@@ -168,6 +174,7 @@ public class AttendanceService {
 	/**
 	 * 特定の日の勤怠情報を取得
 	 */
+	@Override
 	public Optional<Attendance> getAttendanceByDate(Long userId, LocalDate date) {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
@@ -178,6 +185,7 @@ public class AttendanceService {
 	/**
 	 * 月次の勤怠情報を取得
 	 */
+	@Override
 	public List<Attendance> getMonthlyAttendance(Long userId, int year, int month) {
 		YearMonth yearMonth = YearMonth.of(year, month);
 		LocalDate startDate = yearMonth.atDay(1);
@@ -189,6 +197,7 @@ public class AttendanceService {
 	/**
 	 * 月次の勤怠情報を取得（文字列指定）
 	 */
+	@Override
 	public List<Attendance> getMonthlyAttendance(Long userId, String yearMonth) {
 		try {
 			System.out.println("勤怠履歴取得: userId=" + userId + ", month=" + yearMonth);
@@ -213,6 +222,7 @@ public class AttendanceService {
 	/**
 	 * 期間内の勤怠情報を月曜～日曜の週で生成（存在しない日も含める）
 	 */
+	@Override
 	public List<Attendance> generateWeeklyAttendances(Long userId, LocalDate startDate, LocalDate endDate) {
 		List<Attendance> attendances = attendanceRepository.findByUserIdAndDateBetweenOrderByDateAsc(
 				userId, startDate, endDate);
@@ -245,6 +255,7 @@ public class AttendanceService {
 	}
 
 	/*ユーザー情報の取得*/
+	@Override
 	public List<AttendanceResponse> getAllUser() {
 
 		return attendanceRepository.findAll()
@@ -254,12 +265,49 @@ public class AttendanceService {
 
 	}
 
+	@Override
 	public List<AttendanceResponse> getAttendanceUser(Long userId) {
 
 		return attendanceRepository.findByUserId(userId)
 				.stream()
 				.map(AttendanceResponse::fromEntity)
 				.collect(Collectors.toList());
+
+	}
+
+	/*勤怠時刻の修正
+	 * Attendances登録された定時データを修正*/
+	@Override
+	public void upDateUserAttendance(Long userId, UserAttendanceUpdateRequestDto request)
+			throws IllegalAccessException {
+		userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("指定されたユーザーが存在しません。" + userId));
+
+		/*時刻とユーザーidで修正対象を検索*/
+		Optional<Attendance> existingAttendanceOptional = attendanceRepository.findByUserIdAndDate(userId,
+				request.getDate());
+		/*修正対象があれば修正をする*/
+		Attendance attendance;
+		if (existingAttendanceOptional.isPresent()) {
+			attendance = existingAttendanceOptional.get();
+		} else {
+			throw new IllegalAccessException("指定された日付の勤怠記録が見つかりません。");
+		}
+
+		/*勤務開始の修正*/
+		if (request.getStartTime() != null) {
+			attendance.setClockIn(LocalDateTime.of(request.getDate(), request.getStartTime()));
+		} else {
+			attendance.setClockIn(null);//値が入力されてない場合はnullを格納
+		}
+		
+		if(request.getEndTime() != null) {
+			LocalDateTime clockOutDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
+			/*退勤時刻が出勤時刻より前（０時過ぎ）の場合は翌日の勤怠として扱う*/
+			if(attendance.getClockIn() != null && request.getEndTime().isBefore(request.getStartTime())) {
+				
+			}
+		}
 
 	}
 }

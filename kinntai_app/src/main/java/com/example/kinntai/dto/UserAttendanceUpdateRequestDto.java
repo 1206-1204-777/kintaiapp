@@ -6,11 +6,9 @@ import java.time.LocalTime;
 import lombok.Data;
 
 @Data
-public class CorrectionRequestDto {
+public class UserAttendanceUpdateRequestDto {
 	private LocalDate date;
-	private String reason;
 	private LocalTime startTime;
 	private LocalTime endTime;
-	private String message;
 
 }

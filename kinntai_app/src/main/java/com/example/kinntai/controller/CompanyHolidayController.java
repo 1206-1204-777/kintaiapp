@@ -20,20 +20,29 @@ import com.example.kinntai.dto.CompanyHolidayRequest;
 import com.example.kinntai.dto.CompanyHolidayResponse;
 import com.example.kinntai.entity.CompanyHoliday;
 import com.example.kinntai.service.CompanyHolidayService;
-import com.example.kinntai.service.UserService; // ユーザー情報を取得するサービス
+import com.example.kinntai.service.UserService;
 
 @RestController
 @RequestMapping("/api/company-holidays")
-@CrossOrigin(origins = "*") // CORS対応
+@CrossOrigin(origins = "*")
+/**
+ * 会社休日に関する操作を提供するコントローラークラスです。
+ * 管理者が会社休日を登録、取得、更新、削除するための機能を提供します。
+ */
 public class CompanyHolidayController {
 
     @Autowired
     private CompanyHolidayService companyHolidayService;
 
     @Autowired
-    private UserService userService; // 登録ユーザーのユーザー名を取得するため
+    private UserService userService;
 
-    // 会社休日の登録
+    /**
+     * 新しい会社休日を登録するエンドポイントです。
+     *
+     * @param request 登録する会社休日の情報
+     * @return 登録結果またはエラーメッセージ
+     */
     @PostMapping
     public ResponseEntity<?> createCompanyHoliday(@RequestBody CompanyHolidayRequest request) {
         try {
@@ -46,7 +55,11 @@ public class CompanyHolidayController {
         }
     }
 
-    // すべての会社休日を取得
+    /**
+     * すべての会社休日を取得するエンドポイントです。
+     *
+     * @return 会社休日のリスト
+     */
     @GetMapping
     public ResponseEntity<List<CompanyHolidayResponse>> getAllCompanyHolidays() {
         List<CompanyHoliday> holidays = companyHolidayService.getAllCompanyHolidays();
@@ -56,9 +69,16 @@ public class CompanyHolidayController {
         return ResponseEntity.ok(responses);
     }
 
-    // 会社休日の更新
+    /**
+     * 指定されたIDの会社休日を更新するエンドポイントです。
+     *
+     * @param id 更新対象のID
+     * @param request 更新内容
+     * @return 更新結果またはエラーメッセージ
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateCompanyHoliday(@PathVariable Long id, @RequestBody CompanyHolidayRequest request) {
+    public ResponseEntity<?> updateCompanyHoliday(@PathVariable Long id,
+                                                  @RequestBody CompanyHolidayRequest request) {
         try {
             CompanyHoliday updatedHoliday = companyHolidayService.updateCompanyHoliday(id, request);
             return ResponseEntity.ok(convertToCompanyHolidayResponse(updatedHoliday));
@@ -69,7 +89,12 @@ public class CompanyHolidayController {
         }
     }
 
-    // 会社休日の削除
+    /**
+     * 指定されたIDの会社休日を削除するエンドポイントです。
+     *
+     * @param id 削除対象のID
+     * @return 削除結果またはエラーメッセージ
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCompanyHoliday(@PathVariable Long id) {
         try {
@@ -84,13 +109,18 @@ public class CompanyHolidayController {
         }
     }
 
-    // CompanyHoliday エンティティを CompanyHolidayResponse DTO に変換するヘルパーメソッド
+    /**
+     * CompanyHolidayエンティティをレスポンスDTOに変換します。
+     *
+     * @param companyHoliday 会社休日エンティティ
+     * @return DTO形式の会社休日情報
+     */
     private CompanyHolidayResponse convertToCompanyHolidayResponse(CompanyHoliday companyHoliday) {
         CompanyHolidayResponse response = new CompanyHolidayResponse();
         response.setId(companyHoliday.getId());
         response.setHolidayDate(companyHoliday.getHolidayDate());
         response.setHolidayName(companyHoliday.getHolidayName());
-        response.setCreatedByUsername(companyHoliday.getCreatedByUser().getUsername()); // 登録者名
+        response.setCreatedByUsername(companyHoliday.getCreatedByUser().getUsername());
         response.setCreatedAt(companyHoliday.getCreatedAt());
         response.setUpdatedAt(companyHoliday.getUpdatedAt());
         return response;

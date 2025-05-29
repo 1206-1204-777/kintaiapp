@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.kinntai.dto.AdminRegister;
 import com.example.kinntai.dto.AttendanceResponse;
 import com.example.kinntai.service.AdminService;
-import com.example.kinntai.service.impl.AttendanceService;
+import com.example.kinntai.service.AttendanceService;
 
 @RestController
 @RequestMapping("/api")  // ベースパスを/adminから/apiに変更

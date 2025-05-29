@@ -16,31 +16,45 @@ import com.example.kinntai.service.AuthService;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
+/**
+ * 認証処理を担当するコントローラークラスです。
+ * ユーザーのサインアップおよびログイン機能を提供します。
+ */
 public class AuthController {
 
     @Autowired
     private AuthService authService;
 
+    /**
+     * 新規ユーザー登録（サインアップ）を処理するエンドポイントです。
+     *
+     * @param request ユーザーの登録情報
+     * @return 登録されたユーザー情報
+     */
     @PostMapping("/signup")
     public ResponseEntity<UserResponse> registerUser(@RequestBody SignupRequest request) {
         try {
             System.out.println("ユーザー登録リクエスト: " + request.getUsername());
-            
-            // ユーザー名の重複チェック
+
             if (request.getUsername() == null || request.getUsername().isEmpty()) {
                 throw new RuntimeException("ユーザー名は必須です");
             }
 
-            // 新しいユーザーを作成
             UserResponse response = authService.registerUser(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             System.err.println("ユーザー登録エラー: " + e.getMessage());
             e.printStackTrace();
-            throw e; // エラーを再スロー - クライアントに詳細エラーを返すため
+            throw e;
         }
     }
 
+    /**
+     * ユーザーログインを処理するエンドポイントです。
+     *
+     * @param request ログイン情報
+     * @return 認証されたユーザー情報またはエラーメッセージ
+     */
     @PostMapping("/login")
     public ResponseEntity<UserResponse> login(@RequestBody LoginRequest request) {
         try {
