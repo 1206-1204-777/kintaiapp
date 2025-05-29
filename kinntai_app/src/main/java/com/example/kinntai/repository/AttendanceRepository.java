@@ -10,14 +10,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.kinntai.entity.Attendance;
-import com.example.kinntai.entity.User;
 
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
-	Optional<Attendance> findByUserAndDate(User user, LocalDate date);
+    Optional<Attendance> findByUser_IdAndDate(Long userId, LocalDate date);
 
-	List<Attendance> findByUserIdAndDateBetweenOrderByDateAsc(Long userId, LocalDate startDate, LocalDate endDate);
+	List<Attendance> findByUser_IdAndDateBetweenOrderByDateAsc(Long userId, LocalDate startDate, LocalDate endDate);
 
 	@Query("SELECT a FROM Attendance a WHERE a.user.id = ?1 AND YEAR(a.date) = ?2 AND MONTH(a.date) = ?3 ORDER BY a.date ASC")
 	List<Attendance> findByUserIdAndYearAndMonth(Long userId, int year, int month);
@@ -33,5 +32,5 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 	@Query("SELECT a FROM Attendance a WHERE a.date = :date AND a.clockIn IS NOT NULL AND a.clockOut IS NULL")
 	List<Attendance> findByAttendanceDateAndClockInNotNullAndClockOutIsNull(@Param("date") LocalDate today);
 	
-	List<Attendance> findByUserIdAndDate(Long userId,LocalDate date);
-}
+    List<Attendance> findAllByUser_Id(Long userId);
+    List<Attendance> findAllByUser_IdAndDate(Long userId, LocalDate date);}

@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.kinntai.dto.AttendanceResponse;
 import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
-import com.example.kinntai.entity.User;
 import com.example.kinntai.service.AttendanceService;
 
 @RestController
@@ -33,7 +32,7 @@ public class AttendanceController {
 	 * 出勤処理
 	 */
 	@PostMapping("/clock-in/{userId}")
-	public ResponseEntity<Attendance> clockIn(@PathVariable User userId) {
+	public ResponseEntity<Attendance> clockIn(@PathVariable Long userId) {
 		try {
 			System.out.println("出勤リクエスト: userId=" + userId);
 			Attendance attendance = attendanceService.clockIn(userId);
@@ -49,7 +48,7 @@ public class AttendanceController {
 	 * 退勤処理
 	 */
 	@PostMapping("/clock-out/{userId}")
-	public ResponseEntity<Attendance> clockOut(@PathVariable User userId) {
+	public ResponseEntity<Attendance> clockOut(@PathVariable Long userId) {
 		try {
 			System.out.println("退勤リクエスト: userId=" + userId);
 			Attendance attendance = attendanceService.clockOut(userId);
@@ -65,7 +64,7 @@ public class AttendanceController {
 	 * 勤務状態の取得
 	 */
 	@GetMapping("/{userId}/status")
-	public ResponseEntity<AttendanceResponse> getAttendanceStatus(@PathVariable User userId) {
+	public ResponseEntity<AttendanceResponse> getAttendanceStatus(@PathVariable Long userId) {
 		try {
 			System.out.println("勤務状態取得: userId=" + userId);
 			AttendanceResponse status = attendanceService.getAttendanceStatus(userId);
@@ -82,7 +81,7 @@ public class AttendanceController {
 	 */
 	@GetMapping("/{userId}/date/{date}")
 	public ResponseEntity<Attendance> getAttendanceByDate(
-			@PathVariable User userId,
+			@PathVariable Long userId,
 			@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 		try {
 			System.out.println("日次勤怠情報取得: userId=" + userId + ", date=" + date);
@@ -102,7 +101,7 @@ public class AttendanceController {
 	 */
 	@GetMapping("/monthly/{userId}")
 	public ResponseEntity<List<Attendance>> getMonthlyAttendance(
-			@PathVariable User userId,
+			@PathVariable Long userId,
 			@RequestParam String month) {
 		try {
 			System.out.println("勤怠履歴取得: userId=" + userId + ", month=" + month);
@@ -122,7 +121,7 @@ public class AttendanceController {
 	 */
 	@GetMapping("/weekly/{userId}")
 	public ResponseEntity<List<Attendance>> getWeeklyAttendance(
-			@PathVariable User userId,
+			@PathVariable Long userId,
 			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
 			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 		try {
