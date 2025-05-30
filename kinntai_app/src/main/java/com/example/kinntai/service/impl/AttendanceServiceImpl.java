@@ -3,6 +3,7 @@ package com.example.kinntai.service.impl;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.kinntai.dto.AttendanceResponse;
 import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
+import com.example.kinntai.entity.Location;
 import com.example.kinntai.entity.User;
 import com.example.kinntai.repository.AttendanceRepository;
 import com.example.kinntai.repository.LocationRepository;
@@ -119,14 +121,10 @@ public class AttendanceServiceImpl implements AttendanceService {
 			long actualWorkMinutes = Math.max(0, totalDurationMinutes - fixedBreakMinutes);
 			attendance.setTotalWorkMin(actualWorkMinutes); // totalWorkMinutes に実労働時間を設定
 
-			////			long locationTime = Duration.between(
-////					location.getStartTime(), location.getEndTime()).toMinutes();
-			//
-			//			if (locationTime <= totalDurationMinutes) {
-			//				attendance.setOvertimeMinutes(0L);
-			//			}
-			//			long overtime = Math.max(0, totalDurationMinutes - locationTime);
-			//			attendance.setOvertimeMinutes(overtime);
+			/*残業時間の計算*/
+			Long overtime = calculateOvertime(
+					user, attendance.getClockIn(), attendance.getClockOut(), actualWorkMinutes);
+			attendance.setOvertimeMinutes(overtime);
 
 			return attendanceRepository.save(attendance);
 		} catch (Exception e) {
@@ -295,7 +293,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 	@Override
 	public Attendance updateUserAttendance(Long userId, UserAttendanceUpdateRequestDto request)
 			throws IllegalAccessException {
-		userRepository.findById(userId)
+		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("指定されたユーザーが存在しません。" + userId));
 
 		/*時刻とユーザーidで修正対象を検索*/
@@ -334,11 +332,15 @@ public class AttendanceServiceImpl implements AttendanceService {
 			/*休憩時間を格納*/
 			long breakMinutes = 60L;
 			attendance.setTotalBreakMin(breakMinutes);
-			
+
 			/*休憩時間を計算*/
-			long actualWorkMinutes = Math.max(0,totalDurationMinutes - breakMinutes);
+			long actualWorkMinutes = Math.max(0, totalDurationMinutes - breakMinutes);
 			attendance.setTotalWorkMin(actualWorkMinutes);
-		}else {
+
+			Long overtime = calculateOvertime(
+					user, attendance.getClockIn(),attendance.getClockOut(),actualWorkMinutes);
+			attendance.setOvertimeMinutes(overtime);
+		} else {
 			attendance.setTotalBreakMin(null);
 			attendance.setTotalWorkMin(null);
 		}
@@ -347,4 +349,55 @@ public class AttendanceServiceImpl implements AttendanceService {
 		return attendanceRepository.save(attendance);
 	}
 
+	/*残業時間の計算のヘルパー（補助）メソッド
+	 * 残業計算部分を切り離して活用*/
+	private Long calculateOvertime(
+			User user, LocalDateTime clockIn, LocalDateTime clockOut, long actualWorkMinutes) {
+
+		System.out.println("--- calculateOvertime Start ---");
+		System.out.println("User ID: " + user.getId());
+		System.out.println("Clock In: " + clockIn);
+		System.out.println("Clock Out: " + clockOut);
+		System.out.println("Actual Work Minutes (休憩差し引き後): " + actualWorkMinutes);
+
+		/*ユーザーの勤務表情報を取得*/
+		Location location = user.getLocation();
+		if (location == null) {
+			System.err.println("Error: Location is null for user ID: " + user.getId() + ". Overtime will be 0.");
+			return 0L; // 勤務地が設定されていない場合は残業時間0とする
+		}
+
+		System.out.println("Location Name: " + location.getName());
+		LocalTime regularStartTime = location.getStartTime();
+		LocalTime regularEndTime = location.getEndTime();
+		System.out.println("Regular Start Time (Location): " + regularStartTime);
+		System.out.println("Regular End Time (Location): " + regularEndTime);
+
+		/*取得した定時時間をLocalDateTimeに変換*/
+		LocalDateTime regularStartDateTime = LocalDateTime.of(clockIn.toLocalDate(), regularStartTime);
+		LocalDateTime regularEndDateTime = LocalDateTime.of(clockOut.toLocalDate(), regularEndTime);
+		System.out.println("Regular Start DateTime: " + regularStartDateTime);
+		System.out.println("Regular End DateTime (initial): " + regularEndDateTime);
+
+		/*もし定時終了時刻が定時開始時刻より前の場合は翌日の日付とみなす（例: 22:00-翌日07:00）*/
+		if (regularEndDateTime.isBefore(regularStartDateTime)) {
+			regularEndDateTime = regularEndDateTime.plusDays(1);
+			System.out.println("Regular End DateTime (adjusted for next day): " + regularEndDateTime);
+		}
+
+		/*定時時間*/
+		long regularWorkDurationMinutes = Duration.between(regularStartDateTime, regularEndDateTime).toMinutes();
+		System.out.println("Regular Work Duration Minutes (定時総時間): " + regularWorkDurationMinutes);
+
+		/*定時から休憩時間を引く*/
+		long regularWorkMinutesAfterBreak = Math.max(0, regularWorkDurationMinutes - 60L); // 定時時間から一律60分を引く
+		System.out.println("Regular Work Minutes After Break (定時実働時間): " + regularWorkMinutesAfterBreak);
+
+		long overtime = Math.max(0, actualWorkMinutes - regularWorkMinutesAfterBreak);
+		System.out.println("Calculated Overtime Minutes: " + overtime);
+		System.out.println("--- calculateOvertime End ---");
+
+		return overtime;
+
+	}
 }

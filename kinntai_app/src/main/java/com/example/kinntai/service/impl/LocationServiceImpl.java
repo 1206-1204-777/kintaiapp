@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import com.example.kinntai.dto.LocationRequest;
 import com.example.kinntai.entity.Location;
@@ -109,7 +108,7 @@ public class LocationServiceImpl implements LocationService {
 	 */
 	@Override
 	@Transactional // トランザクション管理
-	public void deleteLocation(@PathVariable Long id, User currentUser) {
+	public void deleteLocation(Long id, User currentUser) {
 
 		if (currentUser == null) {
 			// ログインしていない場合（通常はSpring Securityで認証済みなのでここには来ないはずですが念のため）
@@ -124,14 +123,11 @@ public class LocationServiceImpl implements LocationService {
 					return new EntityNotFoundException("Location not found with ID: " + id); // EntityNotFoundExceptionをスロー
 				});
 
-		//		/*管理者か確認*/
-		//		boolean isAdmin = (currentUser.getRole() == UserRole.ADMIN);
-		//
-		//		/*管理者または登録ユーザーのみが削除可能*/
-		//		if (!isAdmin && !location.getCreatedBy().equals(currentUser.getUsername())) {
-		//			logger.warn("管理者または登録したユーザーではありません" + currentUser.getUsername(), id);
-		//			throw new AccessDeniedException("削除権限がありません。");
-		//		}
+		List<User> associatedUsers = userRepository.findByLocationId(id);
+		for(User user : associatedUsers) {
+			user.setLocation(null);
+			userRepository.save(user);
+		}
 		// 削除処理
 		locationRepository.deleteById(id);
 		logger.info("deleteBy{}" + id, currentUser.getUsername());

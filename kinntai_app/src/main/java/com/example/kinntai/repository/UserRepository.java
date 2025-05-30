@@ -11,8 +11,13 @@ import com.example.kinntai.entity.UserRole;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByUsername(String username);
-    Optional<User> findByEmail(String email);
-    boolean existsByUsername(String username);
-    List<User> findByRole(UserRole admin);	//1 = 管理者　0＝ 一般ユーザー
+	Optional<User> findByUsername(String username);
+
+	Optional<User> findByEmail(String email);
+
+	boolean existsByUsername(String username);
+
+	List<User> findByRole(UserRole admin); //1 = 管理者　0＝ 一般ユーザー
+
+	List<User> findByLocationId(Long locationId);
 }
