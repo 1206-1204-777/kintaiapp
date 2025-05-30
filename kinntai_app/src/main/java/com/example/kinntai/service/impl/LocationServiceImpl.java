@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.kinntai.dto.LocationRequest;
 import com.example.kinntai.entity.Location;
 import com.example.kinntai.entity.User;
+import com.example.kinntai.entity.UserRole;
 import com.example.kinntai.repository.LocationRepository;
 import com.example.kinntai.repository.UserRepository;
 import com.example.kinntai.service.LocationService;
@@ -55,7 +56,17 @@ public class LocationServiceImpl implements LocationService {
 		location.setCreatedBy(request.getCreatedBy());
 		location.setStartTime(startTime);
 		location.setEndTime(endTime);
-		return locationRepository.save(location);
+
+		Location savedLocation = locationRepository.save(location);
+
+		Optional<User> creatorUserOpt = userRepository.findById(request.getCreatedBy());
+		if (creatorUserOpt.isPresent()) {
+			User creatorUser = creatorUserOpt.get();
+			creatorUser.setLocation(savedLocation);
+			userRepository.save(creatorUser);
+		}	
+
+		return savedLocation;
 	}
 
 	/**
@@ -124,9 +135,20 @@ public class LocationServiceImpl implements LocationService {
 				});
 
 		List<User> associatedUsers = userRepository.findByLocationId(id);
-		for(User user : associatedUsers) {
+		for (User user : associatedUsers) {
 			user.setLocation(null);
 			userRepository.save(user);
+		}
+
+		/*管理者か確認*/
+		boolean isAdmin = (currentUser.getRole() == UserRole.ADMIN);
+
+		/*管理者または登録ユーザーのみが削除可能*/
+		if (!isAdmin && (location.getCreatedBy() == null || !location.getCreatedBy().equals(currentUser.getId()))) {
+			logger.warn(
+					"Access Denied: User {} (ID: {}) attempted to delete location ID {} but is not admin or creator.",
+					currentUser.getUsername(), currentUser.getId(), id);
+			throw new AccessDeniedException("削除権限がありません。");
 		}
 		// 削除処理
 		locationRepository.deleteById(id);
