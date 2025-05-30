@@ -322,7 +322,11 @@ public class AttendanceServiceImpl implements AttendanceService {
 			}
 
 			attendance.setClockOut(clockOutDateTime);
+		}else {
+			attendance.setClockOut(null);
 		}
+		
+		
 
 		attendance.setUpdatedAt(LocalDateTime.now());
 		return attendanceRepository.save(attendance);
