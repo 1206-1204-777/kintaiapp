@@ -88,8 +88,8 @@ public class AttendanceServiceImpl implements AttendanceService {
 			Attendance attendance = attendanceRepository.findByUser_IdAndDate(userId, today)
 					.orElseThrow(() -> new RuntimeException("本日の出勤記録がありません。"));
 			// 定時時刻を取得
-//			Location location = locationRepository.findByName(null)
-//					.orElseThrow(() -> new RuntimeException("定時時刻が登録されていません。"));
+			//			Location location = locationRepository.findByName(null)
+			//					.orElseThrow(() -> new RuntimeException("定時時刻が登録されていません。"));
 
 			// 出勤していない場合はエラー
 			if (attendance.getClockIn() == null) {
@@ -119,14 +119,14 @@ public class AttendanceServiceImpl implements AttendanceService {
 			long actualWorkMinutes = Math.max(0, totalDurationMinutes - fixedBreakMinutes);
 			attendance.setTotalWorkMin(actualWorkMinutes); // totalWorkMinutes に実労働時間を設定
 
-////			long locationTime = Duration.between(
+			////			long locationTime = Duration.between(
 ////					location.getStartTime(), location.getEndTime()).toMinutes();
-//
-//			if (locationTime <= totalDurationMinutes) {
-//				attendance.setOvertimeMinutes(0L);
-//			}
-//			long overtime = Math.max(0, totalDurationMinutes - locationTime);
-//			attendance.setOvertimeMinutes(overtime);
+			//
+			//			if (locationTime <= totalDurationMinutes) {
+			//				attendance.setOvertimeMinutes(0L);
+			//			}
+			//			long overtime = Math.max(0, totalDurationMinutes - locationTime);
+			//			attendance.setOvertimeMinutes(overtime);
 
 			return attendanceRepository.save(attendance);
 		} catch (Exception e) {
@@ -322,11 +322,26 @@ public class AttendanceServiceImpl implements AttendanceService {
 			}
 
 			attendance.setClockOut(clockOutDateTime);
-		}else {
+		} else {
 			attendance.setClockOut(null);
 		}
-		
-		
+
+		/*休憩時間修正後にも60分の休憩時間を適用*/
+		if (attendance.getClockIn() != null && attendance.getClockOut() != null) {
+			/*勤務時刻を取得し分単位で比較*/
+			long totalDurationMinutes = Duration.between(
+					attendance.getClockIn(), attendance.getClockOut()).toMinutes();
+			/*休憩時間を格納*/
+			long breakMinutes = 60L;
+			attendance.setTotalBreakMin(breakMinutes);
+			
+			/*休憩時間を計算*/
+			long actualWorkMinutes = Math.max(0,totalDurationMinutes - breakMinutes);
+			attendance.setTotalWorkMin(actualWorkMinutes);
+		}else {
+			attendance.setTotalBreakMin(null);
+			attendance.setTotalWorkMin(null);
+		}
 
 		attendance.setUpdatedAt(LocalDateTime.now());
 		return attendanceRepository.save(attendance);
