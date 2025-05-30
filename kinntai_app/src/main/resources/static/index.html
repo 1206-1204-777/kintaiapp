@@ -680,7 +680,7 @@
 <p><strong>定時時刻:</strong> <span id="scheduledTime">-</span></p>
 <p><strong>出勤時刻:</strong> <span id="todayClockIn">-</span></p>
 <p><strong>退勤時刻:</strong> <span id="todayClockOut">-</span></p>
-<p><strong>勤務時間:</strong> <span id="todayWorkHours">-</span></p>
+<p><strong>残業時間:</strong> <span id="todayWorkHours">-</span></p>
 <p><strong>休憩時間:</strong> <span id="todayTotalBreakHours">-</span></p>
 </div>
 <div class="section">
@@ -705,6 +705,7 @@
 <th>出勤時間</th>
 <th>退勤時間</th>
 <th>勤務時間</th>
+<th>残業時間</th>
 <th>休憩時間</th>
 <th>状態</th>
 <th>操作</th>
@@ -875,60 +876,7 @@
 </div>
 </form>
 </div>
-<div class="section">
-<h2>修正申請履歴</h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr>
-<th>申請日</th>
-<th>対象日</th>
-<th>修正内容</th>
-<th>申請理由</th>
-<th>ステータス</th>
-<th>承認者</th>
-<th>操作</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>2025/05/15</td>
-<td>2025/05/14</td>
-<td>退勤: 18:00 → 19:30</td>
-<td>打刻忘れ</td>
-<td><span style="color: #4CAF50;">承認済</span></td>
-<td>鈴木 部長</td>
-<td>
-<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
-</td>
-</tr>
-<tr>
-<td>2025/05/10</td>
-<td>2025/05/10</td>
-<td>出勤: 10:30 → 09:00</td>
-<td>システムエラー</td>
-<td><span style="color: #4CAF50;">承認済</span></td>
-<td>鈴木 部長</td>
-<td>
-<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
-</td>
-</tr>
-<tr>
-<td>2025/05/21</td>
-<td>2025/05/20</td>
-<td>出勤: 08:50 → 09:00</td>
-<td>打刻ミス</td>
-<td><span style="color: #fd7e14;">申請中</span></td>
-<td>-</td>
-<td>
-<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">取消</button>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
+
 <div class="mockup-screen" id="holiday">
 <div class="section">
 <h2>休日登録</h2>
@@ -1341,7 +1289,8 @@
                     loadTodayAttendance(),
                     loadAttendanceHistory(getCurrentMonth()),
                     checkAttendanceStatus(),
-                    loadScheduledTime(),
+                    //loadScheduledTime(),
+                    loadUserRegularHours(),
                     loadPersonalHolidays(),
                     loadCompanyHolidays(),
                     loadLocations()
@@ -1411,7 +1360,9 @@
 
                         if (attendanceData.clockIn && attendanceData.clockOut) {
                             const workHours = calculateWorkHours(attendanceData.clockIn, attendanceData.clockOut);
-                            document.getElementById('todayWorkHours').textContent = workHours;
+                            document.getElementById('todayWorkHours').textContent = 
+                             (attendanceData.overtimeMinutes !== undefined && attendanceData.overtimeMinutes !== null) ? 
+                    			formatMinutesToHoursAndMinutes(attendanceData.overtimeMinutes) : '0分';
                         } else {
                             document.getElementById('todayWorkHours').textContent = '-';
                         }
@@ -1419,7 +1370,7 @@
                         if (attendanceData.totalBreakMinutes !== undefined && attendanceData.totalBreakMinutes !== null) {
                             document.getElementById('todayTotalBreakHours').textContent = formatMinutesToHoursAndMinutes(attendanceData.totalBreakMinutes);
                         } else {
-                            document.getElementById('todayTotalBreakHours').textContent = '60分（自動）';
+                            document.getElementById('todayTotalBreakHours').textContent = '1時間（自動）';
                         }
                     } else {
                         resetTodayAttendanceDisplay();
@@ -1433,6 +1384,8 @@
                 resetTodayAttendanceDisplay();
             }
         }
+        
+        
 
         // 今日の勤怠表示をリセット
         function resetTodayAttendanceDisplay() {
@@ -1441,6 +1394,61 @@
             document.getElementById('todayWorkHours').textContent = '-';
             document.getElementById('todayTotalBreakHours').textContent = '-';
         }
+        
+        
+        async function loadUserRegularHours() {
+    try {
+        if (!currentUserId) return;
+
+        const response = await fetchWithTimeout(`/api/locations/user/${currentUserId}`);
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                console.warn(`User's location not found for user ID: ${currentUserId}. Displaying defaults.`);
+                document.getElementById('scheduledTime').textContent = '未設定'; // 定時時刻
+            } else {
+                throw new Error(`定時時刻取得失敗 (${response.status})`);
+            }
+            return;
+        }
+
+        const locationData = await response.json();
+
+        if (locationData && locationData.startTime && locationData.endTime) {
+            // HTMLの「定時時刻:」のspan (scheduledTime) に定時出勤〜定時退勤と定時実労働時間を表示
+            const start = formatLocalTime(locationData.startTime);
+            const end = formatLocalTime(locationData.endTime);
+            
+            // 定時実労働時間を計算
+            const startParts = locationData.startTime.split(':');
+            const endParts = locationData.endTime.split(':');
+            
+            const startDate = new Date();
+            startDate.setHours(parseInt(startParts[0]), parseInt(startParts[1]), 0, 0);
+            const endDate = new Date();
+            endDate.setHours(parseInt(endParts[0]), parseInt(endParts[1]), 0, 0);
+
+            if (endDate.getTime() < startDate.getTime()) {
+                endDate.setDate(endDate.getDate() + 1);
+            }
+
+            const totalDurationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+            const fixedBreakMinutes = 60; // 一律60分
+            const regularWorkMinutesAfterBreak = Math.max(0, totalDurationMinutes - fixedBreakMinutes);
+            const formattedRegularWorkTime = formatMinutesToHoursAndMinutes(regularWorkMinutesAfterBreak); // formatMinutesToHoursAndMinutes関数を利用
+
+            document.getElementById('scheduledTime').textContent = 
+                `${start} ～ ${end} （実労働: ${formattedRegularWorkTime}）`; // ここで定時と実労働時間を結合して表示
+
+        } else {
+            document.getElementById('scheduledTime').textContent = '未設定';
+        }
+
+    } catch (error) {
+        console.error('定時時刻取得エラー:', error);
+        document.getElementById('scheduledTime').textContent = 'エラー';
+    }
+}
 
         // 勤怠履歴を読み込む
         async function loadAttendanceHistory(month) {
@@ -1523,27 +1531,34 @@
                     clockOutCell.textContent = formatTime(item.clockOut);
                     row.appendChild(clockOutCell);
 
-                    const workHoursCell = document.createElement('td');
-workHoursCell.textContent = item.totalWorkMin !== undefined && item.totalWorkMin !== null ?
-    formatMinutesToHoursAndMinutes(item.totalWorkMin) :
-    (item.clockIn && item.clockOut ? calculateWorkHours(item.clockIn, item.clockOut) : '-');
-row.appendChild(workHoursCell);
+			// 実労働時間 (totalWorkMin) を表示 (旧「勤務時間」列)
+            const actualWorkMinutesCell = document.createElement('td');
+            actualWorkMinutesCell.textContent = item.totalWorkMin !== undefined && item.totalWorkMin !== null ?
+                formatMinutesToHoursAndMinutes(item.totalWorkMin) : '-';
+            row.appendChild(actualWorkMinutesCell);
 
+            // 残業時間 (overtimeMinutes) を表示 (旧「休憩時間」列を再利用)
+            const overtimeMinutesCell = document.createElement('td');
+            overtimeMinutesCell.textContent = item.overtimeMinutes !== undefined && item.overtimeMinutes !== null ?
+                formatMinutesToHoursAndMinutes(item.overtimeMinutes) : '0分'; // nullの場合は0分と表示
+            row.appendChild(overtimeMinutesCell);
 
-                    const totalBreakHoursCell = document.createElement('td');
-                    totalBreakHoursCell.textContent = item.totalBreakMinutes !== undefined && item.totalBreakMinutes !== null ?
-                                                    formatMinutesToHoursAndMinutes(item.totalBreakMinutes) : '60分（自動）';
-                    row.appendChild(totalBreakHoursCell);
+            // 休憩時間 (totalBreakMin) を表示 (旧「状態」列を再利用)
+            const totalBreakHoursCell = document.createElement('td');
+            totalBreakHoursCell.textContent = item.totalBreakMin !== undefined && item.totalBreakMin !== null ?
+                formatMinutesToHoursAndMinutes(item.totalBreakMin) : '60分（自動）'; // nullの場合は60分と表示
+            row.appendChild(totalBreakHoursCell);
 
-                    const statusCell = document.createElement('td');
-                    if (item.clockIn && item.clockOut) {
-                        statusCell.innerHTML = '<span style="color: #4CAF50;">完了</span>';
-                    } else if (item.clockIn) {
-                        statusCell.innerHTML = '<span style="color: #FFC107;">勤務中</span>';
-                    } else {
-                        statusCell.innerHTML = '<span style="color: #6c757d;">未打刻</span>';
-                    }
-                    row.appendChild(statusCell);
+            // 状態 (status) を表示 (旧「操作」列を再利用)
+            const statusCell = document.createElement('td');
+            if (item.clockIn && item.clockOut) {
+                statusCell.innerHTML = '<span style="color: #4CAF50;">完了</span>';
+            } else if (item.clockIn) {
+                statusCell.innerHTML = '<span style="color: #FFC107;">勤務中</span>';
+            } else {
+                statusCell.innerHTML = '<span style="color: #6c757d;">未打刻</span>';
+            }
+            row.appendChild(statusCell);
 
                     const actionCell = document.createElement('td');
                     actionCell.innerHTML = '<button onclick="editAttendance(\'' + item.date + '\')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">修正</button>';

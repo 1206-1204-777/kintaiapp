@@ -64,7 +64,7 @@ public class LocationServiceImpl implements LocationService {
 			User creatorUser = creatorUserOpt.get();
 			creatorUser.setLocation(savedLocation);
 			userRepository.save(creatorUser);
-		}	
+		}
 
 		return savedLocation;
 	}
@@ -153,6 +153,16 @@ public class LocationServiceImpl implements LocationService {
 		// 削除処理
 		locationRepository.deleteById(id);
 		logger.info("deleteBy{}" + id, currentUser.getUsername());
+	}
+
+	@Override
+	public Optional<Location> findByUserLocation(Long userId) {
+		Optional<User> userOpt = userRepository.findById(userId);
+		if(userOpt.isPresent()) {
+			User user = userOpt.get();
+			return Optional.ofNullable(user.getLocation());
+		}
+		return Optional.empty();
 	}
 
 }

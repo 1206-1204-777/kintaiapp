@@ -112,4 +112,15 @@ public class LocationController {
 			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
+
+	@GetMapping("/user/{userId}")
+	public ResponseEntity<Location> getLocationByUserId(@PathVariable Long userId) {
+	    User user = userRepository.findById(userId)
+	                          .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+	    Location location = user.getLocation();
+	    if (location == null) {
+	        return new ResponseEntity<>(HttpStatus.NOT_FOUND); // 勤務地が設定されていない場合
+	    }
+	    return new ResponseEntity<>(location, HttpStatus.OK);
+	}
 }
