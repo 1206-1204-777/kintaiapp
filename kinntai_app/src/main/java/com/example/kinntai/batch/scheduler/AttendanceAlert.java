@@ -26,7 +26,7 @@ public class AttendanceAlert {
 
 	// 毎日21時5分に実行
 	// 秒 分 時 日 月 曜日
-	@Scheduled(cron = "0 5 20 * * *")
+	@Scheduled(cron = "0 0 21 * * *")
 	//@Scheduled(cron = "5 * * * * *")//テスト用
 	public void notifyUnclockedOutUsers() {
 		logger.info("未退勤者アラートチェックを開始します。"); // 追加

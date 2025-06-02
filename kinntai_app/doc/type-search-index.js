@@ -1,0 +1,1 @@
+typeSearchIndex = [{"p":"com.example.kinntai.controller","l":"LocationController"},{"l":"すべてのクラスおよびインタフェース","u":"allclasses-index.html"}];updateSearchResults();
