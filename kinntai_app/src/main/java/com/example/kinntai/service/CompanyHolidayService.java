@@ -1,11 +1,13 @@
 package com.example.kinntai.service;
 
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import com.example.kinntai.dto.CompanyHolidayRequest; // DTOは後で作成します
 import com.example.kinntai.entity.CompanyHoliday;
+import com.example.kinntai.entity.User;
 
 public interface CompanyHolidayService {
 
@@ -25,5 +27,5 @@ public interface CompanyHolidayService {
     CompanyHoliday updateCompanyHoliday(Long id, CompanyHolidayRequest request);
 
     // 会社休日の削除
-    boolean deleteCompanyHoliday(Long id);
+    boolean deleteCompanyHoliday(Long id,User currentUser) throws AccessDeniedException;
 }
