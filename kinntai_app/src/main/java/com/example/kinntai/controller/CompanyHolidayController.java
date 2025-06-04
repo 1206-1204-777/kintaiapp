@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,12 +14,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.kinntai.dto.CompanyHolidayRequest;
 import com.example.kinntai.dto.CompanyHolidayResponse;
 import com.example.kinntai.entity.CompanyHoliday;
 import com.example.kinntai.entity.User;
+import com.example.kinntai.repository.UserRepository;
 import com.example.kinntai.service.CompanyHolidayService;
 
 @RestController
@@ -34,6 +35,8 @@ public class CompanyHolidayController {
 
 	@Autowired
 	private CompanyHolidayService companyHolidayService;
+	@Autowired
+	private UserRepository userRepository;
 
 	/**
 	 * 新しい会社休日を登録するエンドポイントです。
@@ -94,9 +97,12 @@ public class CompanyHolidayController {
 	 * @return 削除結果またはエラーメッセージ
 	 */
 	@DeleteMapping("/{id}")
-	public ResponseEntity<?> deleteCompanyHoliday(@PathVariable Long id, @AuthenticationPrincipal User currentUser) {
+	public ResponseEntity<?> deleteCompanyHoliday(
+			@PathVariable Long id, @RequestParam Long currentUser) {
+		User creator = userRepository.findById(currentUser)
+				.orElseThrow(() ->new RuntimeException("登録ユーザーが見つかりません。"));
 		try {
-			boolean deleted = companyHolidayService.deleteCompanyHoliday(id, currentUser);
+			boolean deleted = companyHolidayService.deleteCompanyHoliday(id, creator);
 			if (deleted) {
 				return ResponseEntity.ok("会社休日が削除されました。");
 			} else {

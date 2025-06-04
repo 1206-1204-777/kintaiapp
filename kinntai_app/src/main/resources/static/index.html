@@ -2295,7 +2295,15 @@ window.deleteCompanyHoliday = async function(holidayId) {
     try {
         clearHolidayMessages();
 
-        const response = await fetchWithTimeout(`/api/company-holidays/${holidayId}`, {
+        if(!currentUserId){
+            showHolidayError('ユーザー情報が見つかりません。');
+            return;
+        }
+        
+        console.log("Attempting to delete holiday. holidayId:", holidayId, "currentUserId:", currentUserId); 
+
+        const response = await fetchWithTimeout(
+            `/api/company-holidays/${holidayId}?currentUser=${currentUserId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -2364,6 +2372,7 @@ window.deleteCompanyHoliday = async function(holidayId) {
                     showExportError('ユーザー情報が見つかりません。');
                     return;
                 }
+        console.log("Attempting to delete holiday. currentUserId:", currentUserId); 
 
                 if (type === 'personal') {
                     formData = new FormData(document.getElementById('exportPersonalForm'));

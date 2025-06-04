@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -31,7 +32,7 @@ public class CompanyHoliday {
     @Column(nullable = false, length = 100)
     private String holidayName; // 休日名 (例: 創立記念日)
 
-    @ManyToOne // 登録ユーザー (管理者など)
+    @ManyToOne(fetch = FetchType.EAGER) // 登録ユーザー (管理者など)
     @JoinColumn(name = "created_by_user_id", nullable = false)
     private User createdByUser;
 

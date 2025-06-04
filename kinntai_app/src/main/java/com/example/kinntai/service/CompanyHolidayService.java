@@ -28,4 +28,5 @@ public interface CompanyHolidayService {
 
     // 会社休日の削除
     boolean deleteCompanyHoliday(Long id,User currentUser) throws AccessDeniedException;
+
 }

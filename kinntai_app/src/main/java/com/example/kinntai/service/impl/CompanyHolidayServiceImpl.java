@@ -1,23 +1,25 @@
 package com.example.kinntai.service.impl;
 
-import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException; // java.nio.file... ではなくこちらを使用！
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.kinntai.dto.CompanyHolidayRequest; // DTOは後で作成します
 import com.example.kinntai.entity.CompanyHoliday;
 import com.example.kinntai.entity.User;
-import com.example.kinntai.entity.UserRole;
 import com.example.kinntai.repository.CompanyHolidayRepository;
 import com.example.kinntai.repository.UserRepository; // Userエンティティを使うため
 import com.example.kinntai.service.CompanyHolidayService;
 
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @Service
 public class CompanyHolidayServiceImpl implements CompanyHolidayService {
 
@@ -97,6 +99,9 @@ public class CompanyHolidayServiceImpl implements CompanyHolidayService {
 	@Override
 	@Transactional
 	public boolean deleteCompanyHoliday(Long id, User currentUser) throws AccessDeniedException {
+        System.out.println("====== DEBUG: deleteCompanyHoliday method invoked ======");
+        System.out.println("DEBUG: Attempting to delete CompanyHoliday ID: " + id + " by user: " + (currentUser != null ? currentUser.getUsername() : "null"));
+
 
 		//ユーザーがログインしているか確認
 		if (currentUser == null) {
@@ -106,18 +111,35 @@ public class CompanyHolidayServiceImpl implements CompanyHolidayService {
 		CompanyHoliday companyHoliday = companyHolidayRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("指定した日に休日登録がありません。"));
 
-		boolean isAdmin = (currentUser.getRole() == UserRole.ADMIN);
 		boolean isCreator = false;
 
 		//登録者の存在確認と休日登録した本人か確認
 		if (companyHoliday.getCreatedByUser() != null) {
 			isCreator = companyHoliday.getCreatedByUser().getId().equals(currentUser.getId());
+			log.info(
+					"CompanyHoliday ID {} found. Created by User ID: {}, Username: {}. Current User ID: {}. Is this user the creator? {}",
+					companyHoliday.getId(), companyHoliday.getCreatedByUser().getId(),
+					companyHoliday.getCreatedByUser().getUsername(), currentUser, isCreator);
+		} else {
+			log.warn(
+					"CompanyHoliday ID {} has no creator user linked (createdByUser is null). Only admin can delete this record.",
+					id);
+
 		}
-		if (isAdmin || isCreator) {
+		log.info("Delete permission check for CompanyHoliday ID {}. Current user isAdmin: {}, isCreator: {}.",
+				id, isCreator);
+
+		if (isCreator) {
+			log.info(
+					"User ID {} has sufficient permission (isAdmin: {}, isCreator: {}). Proceeding with deletion of CompanyHoliday ID {}.",
+					currentUser, isCreator, id);
+			log.info("CompanyHoliday ID {} successfully deleted.", id);
 			companyHolidayRepository.deleteById(id);
 			return true;
-		}else {
-			throw new AccessDeniedException("この会社休日を削除する権限がありません。"); 
+		} else {
+			log.warn("User ID {} does NOT have permission to delete CompanyHoliday ID {}.", currentUser, id);
+
+			throw new AccessDeniedException("この会社休日を削除する権限がありません。");
 		}
 	}
 }
