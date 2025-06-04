@@ -39,7 +39,7 @@ public class LocationController {
 	@Autowired
 	private LocationService locationService;
 	@Autowired
-	UserRepository userRepository;
+	private UserRepository userRepository;
 
 	/**
 	 * 新しい勤務地を登録するエンドポイントです。
