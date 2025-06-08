@@ -35,5 +35,9 @@ public interface LocationService {
 	 * 勤務地を削除します
 	 */
 	void deleteLocation(Long id,User currentUser);
+	
+	/*
+	 * 勤務地情報を取得*/
+	Optional<Location> findByUserLocation(Long userId);
 
 }

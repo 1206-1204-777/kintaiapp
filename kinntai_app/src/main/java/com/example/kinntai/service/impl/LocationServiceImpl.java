@@ -155,6 +155,7 @@ public class LocationServiceImpl implements LocationService {
 		logger.info("deleteBy{}" + id, currentUser.getUsername());
 	}
 
+	//勤務地情報を取得します
 	@Override
 	public Optional<Location> findByUserLocation(Long userId) {
 		Optional<User> userOpt = userRepository.findById(userId);
