@@ -91,30 +91,32 @@ function TodayAttendance() {
     return `${hours}:${minutes}`
   }
 
- const calculateWorkHours = () => {
+  const calculateWorkHours = () => {
   if (!attendance?.clockIn || !attendance?.clockOut) return '-';
 
   try {
+    // clockIn, clockOut が ISO形式（日付＋時刻）ならそのまま使う
     const clockIn = new Date(attendance.clockIn);
     const clockOut = new Date(attendance.clockOut);
 
+    // 時間差（分単位）
     const diffMs = clockOut - clockIn;
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    if (isNaN(diffMs)) return '-'; // ← ここで安全確認
 
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const breakMinutes = attendance.totalBreakMinutes || 60;
     const totalMinutes = diffMinutes - breakMinutes;
+
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
 
     return `${hours}時間${minutes}分`;
-  } catch {
+  } catch (e) {
     return '-';
   }
 };
 
 
-    
-    
 
   const formatBreakTime = () => {
     if (attendance?.totalBreakMinutes != null && window.formatMinutesToHoursAndMinutes) {
