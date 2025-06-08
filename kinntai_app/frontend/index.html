@@ -3,10 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>勤怠管理システム - 開発用</title>
+  <title>勤怠管理システム - 開発環境</title>
+  <style>
+    .attendance-card { border: 1px solid #ddd; padding: 1rem; margin: 1rem 0; border-radius: 8px; }
+    .time-row { display: flex; justify-content: space-between; margin: 0.5rem 0; }
+    .label { font-weight: bold; }
+    .loading { text-align: center; color: #666; }
+    .error { color: red; text-align: center; }
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+  </style>
 </head>
 <body>
-  <div id="today-attendance-react"></div>
+  <div id="root">
+    <h1>勤怠管理システム（開発環境）</h1>
+    
+    <!-- テスト用のボタン -->
+    <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+      <h3>開発テスト用</h3>
+      <button onclick="simulateClockIn()">出勤テスト</button>
+      <button onclick="simulateClockOut()">退勤テスト</button>
+      <button onclick="testUpdate()">更新通知テスト</button>
+    </div>
+    
+    <!-- React版の今日の勤怠表示 -->
+    <div id="today-attendance-react"></div>
+  </div>
+  
+  <!-- 開発用のテスト関数 -->
+  <script>
+    // 既存システムのグローバル変数をシミュレート
+    window.currentUserId = 'test-user-123';
+    
+    // 既存のユーティリティ関数をシミュレート
+    window.formatTime = function(timeStr) {
+      if (!timeStr) return '-';
+      const parts = timeStr.split(':');
+      return `${parts[0]}:${parts[1]}`;
+    };
+    
+    window.calculateWorkHours = function(clockIn, clockOut) {
+      // 簡易計算
+      const start = new Date(`1970-01-01T${clockIn}`);
+      const end = new Date(`1970-01-01T${clockOut}`);
+      const diffMs = end - start;
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      return `${hours}時間${minutes}分`;
+    };
+    
+    window.formatMinutesToHoursAndMinutes = function(totalMinutes) {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return hours > 0 ? `${hours}時間${minutes}分` : `${minutes}分`;
+    };
+    
+    // テスト用の関数
+    function simulateClockIn() {
+      console.log('出勤テストを実行');
+      window.dispatchEvent(new CustomEvent('attendance-updated'));
+    }
+    
+    function simulateClockOut() {
+      console.log('退勤テストを実行');
+      window.dispatchEvent(new CustomEvent('attendance-updated'));
+    }
+    
+    function testUpdate() {
+      console.log('手動更新テストを実行');
+      window.dispatchEvent(new CustomEvent('attendance-updated'));
+    }
+  </script>
+  
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

@@ -31,44 +31,46 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
-    @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(AbstractHttpConfigurer::disable) // CSRF を無効化 (REST API の場合)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(authorize -> authorize
-                // 認証なしでアクセス許可するパス
-                // ログイン、登録、静的ファイルなど
-                .requestMatchers(
-                    "/api/auth/login",
-                    "/api/auth/signup",
-                    "/css/**", "/js/**", "/images/**", "/webjars/**", "/**.ico",
-                    "/", "/index.html", "/login.html", "/register.html", "/**.html",
-                    "/error" // エラーページへのアクセスも許可
-                ).permitAll()
-                // その他の全ての /api/** パスは認証が必要 (JWTフィルターで認証される)
-                .requestMatchers("/api/**").hasAnyRole("USER","ADMIN")
-                // 上記以外のすべてのリクエストは認証が必要 (SPAの場合)
-                // ただし、/api/** 以外のHTMLなどへのアクセスは /index.html で許可済み
-                .anyRequest().authenticated()
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // セッションを使わない (JWT認証の場合)
-            )
-            .formLogin(AbstractHttpConfigurer::disable)  // フォームログインを無効化
-            .httpBasic(AbstractHttpConfigurer::disable) // HTTP Basic 認証を無効化
-            .logout(logout -> logout // ログアウト設定（Spring SecurityのログアウトURLを無効化）
-                .logoutUrl("/logout") // このURLへのアクセスでSpring Securityのセッションがクリアされるが、STATLESSなのであまり意味はない
-                .logoutSuccessUrl("/login.html") // ログアウト成功時のリダイレクト先
-                .permitAll() // ログアウトは認証なしでアクセス許可
-            );
-        
-        // JWT認証フィルターをUsernamePasswordAuthenticationFilterの前に挿入
-        // これにより、各リクエストがSpring Securityの認証フローに入る前にJWTを検証
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
-    }
+	    @Bean
+	    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	        http
+	            .csrf(AbstractHttpConfigurer::disable) // CSRF を無効化 (REST API の場合)
+	            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+	            .authorizeHttpRequests(authorize -> authorize
+	                // 認証なしでアクセス許可するパス
+	                // ログイン、登録、静的ファイルなど
+	                .requestMatchers(
+	                    "/api/auth/login",
+	                    "/api/auth/signup",
+	                    "/api/attendance/**",//React開発用に許可。移行完了後に削除
+	                    "/api/dev/**",
+	                    "/css/**", "/js/**", "/images/**", "/webjars/**", "/**.ico",
+	                    "/", "/index.html", "/login.html", "/register.html", "/**.html",
+	                    "/error" // エラーページへのアクセスも許可
+	                ).permitAll()
+	                // その他の全ての /api/** パスは認証が必要 (JWTフィルターで認証される)
+	                .requestMatchers("/api/**").hasAnyRole("USER","ADMIN")
+	                // 上記以外のすべてのリクエストは認証が必要 (SPAの場合)
+	                // ただし、/api/** 以外のHTMLなどへのアクセスは /index.html で許可済み
+	                .anyRequest().authenticated()
+	            )
+	            .sessionManagement(session -> session
+	                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // セッションを使わない (JWT認証の場合)
+	            )
+	            .formLogin(AbstractHttpConfigurer::disable)  // フォームログインを無効化
+	            .httpBasic(AbstractHttpConfigurer::disable) // HTTP Basic 認証を無効化
+	            .logout(logout -> logout // ログアウト設定（Spring SecurityのログアウトURLを無効化）
+	                .logoutUrl("/logout") // このURLへのアクセスでSpring Securityのセッションがクリアされるが、STATLESSなのであまり意味はない
+	                .logoutSuccessUrl("/login.html") // ログアウト成功時のリダイレクト先
+	                .permitAll() // ログアウトは認証なしでアクセス許可
+	            );
+	        
+	        // JWT認証フィルターをUsernamePasswordAuthenticationFilterの前に挿入
+	        // これにより、各リクエストがSpring Securityの認証フローに入る前にJWTを検証
+	        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+	
+	        return http.build();
+	    }
     
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
