@@ -91,33 +91,30 @@ function TodayAttendance() {
     return `${hours}:${minutes}`
   }
 
-  const calculateWorkHours = () => {
-    if (!attendance?.clockIn || !attendance?.clockOut) return '-'
-    
-    // 既存のcalculateWorkHours関数があれば使用
-    if (window.calculateWorkHours) {
-      return window.calculateWorkHours(attendance.clockIn, attendance.clockOut)
-    }
-    
-    // フォールバック: 簡易計算
-    try {
-      const clockIn = new Date(`1970-01-01T${attendance.clockIn}`)
-      const clockOut = new Date(`1970-01-01T${attendance.clockOut}`)
-      const diffMs = clockOut - clockIn
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-      const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-      
-      // 休憩時間を引く
-      const breakMinutes = attendance.totalBreakMinutes || 60
-      const totalMinutes = (diffHours * 60 + diffMinutes) - breakMinutes
-      const workHours = Math.floor(totalMinutes / 60)
-      const workMinutes = totalMinutes % 60
-      
-      return `${workHours}時間${workMinutes}分`
-    } catch (e) {
-      return '-'
-    }
+ const calculateWorkHours = () => {
+  if (!attendance?.clockIn || !attendance?.clockOut) return '-';
+
+  try {
+    const clockIn = new Date(attendance.clockIn);
+    const clockOut = new Date(attendance.clockOut);
+
+    const diffMs = clockOut - clockIn;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+    const breakMinutes = attendance.totalBreakMinutes || 60;
+    const totalMinutes = diffMinutes - breakMinutes;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}時間${minutes}分`;
+  } catch {
+    return '-';
   }
+};
+
+
+    
+    
 
   const formatBreakTime = () => {
     if (attendance?.totalBreakMinutes != null && window.formatMinutesToHoursAndMinutes) {
