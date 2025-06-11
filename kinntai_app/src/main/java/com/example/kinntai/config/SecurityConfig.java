@@ -40,6 +40,7 @@ public class SecurityConfig {
 	                // 認証なしでアクセス許可するパス
 	                // ログイン、登録、静的ファイルなど
 	                .requestMatchers(
+	                	"api/batch/start-weekly-job",
 	                    "/api/auth/login",
 	                    "/api/auth/signup",
 	                    "/api/attendance/**",//React開発用に許可。移行完了後に削除

@@ -82,7 +82,7 @@ public class WeeklyBatchConfig {
 
 	}
 
-	//ジョブ（ステップの実行）を定義
+	//ジョブ内容（ステップの実行）を定義
 	@Bean
 	Job weeklySummaryJob(JobRepository jobRepository, Step weeklySummaryStep) {
 		return new JobBuilder("weeklySummaryJob", jobRepository)
