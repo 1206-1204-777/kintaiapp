@@ -68,7 +68,6 @@ public class WeeklySummaryProcessor implements ItemProcessor<User, WeeklySummary
 		//集計をした年と月をセット
 		WeeklySummary summary = new WeeklySummary();
 		summary.setUserId(user.getId());
-		summary.setYear(weekStart.getYear());
 		summary.setMonth(weekStart.getMonthValue());
 
 		//週番号を取得。週番号とは1年間の週それぞれに割り振られている番号である
