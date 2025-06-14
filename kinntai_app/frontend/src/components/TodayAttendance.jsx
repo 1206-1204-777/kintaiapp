@@ -192,7 +192,7 @@ function TodayAttendance() {
               cursor: 'pointer'
             }}
           >
-            🔄 再試行 
+            🔄 再試行
           </button>
         </div>
       </div>
