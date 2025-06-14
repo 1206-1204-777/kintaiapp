@@ -36,4 +36,6 @@ public interface LocationService {
 	 */
 	void deleteLocation(Long id,User currentUser);
 
+	Optional<Location> findByUserLocation(Long userId);
+
 }
