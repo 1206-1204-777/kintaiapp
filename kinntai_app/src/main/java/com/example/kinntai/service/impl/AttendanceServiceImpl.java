@@ -16,12 +16,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.kinntai.dto.AttendanceResponse;
+import com.example.kinntai.dto.CorrectionRequestDto;
 import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
+import com.example.kinntai.entity.AttendanceCorrectionRequest;
 import com.example.kinntai.entity.Location;
+import com.example.kinntai.entity.RequestStatus;
 import com.example.kinntai.entity.User;
+import com.example.kinntai.repository.AttendanceCorrectionRquestsRepository;
 import com.example.kinntai.repository.AttendanceRepository;
-import com.example.kinntai.repository.LocationRepository;
 import com.example.kinntai.repository.UserRepository;
 import com.example.kinntai.service.AttendanceService;
 
@@ -33,8 +36,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 	@Autowired
 	private UserRepository userRepository;
+	
 	@Autowired
-	private LocationRepository locationRepository;
+	private AttendanceCorrectionRquestsRepository correctionRequest;
 
 	/**
 	 * 出勤処理
@@ -288,8 +292,10 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 	}
 
-	/*勤怠時刻の修正
-	 * Attendances登録された定時データを修正*/
+	/**勤怠時刻の修正
+	 * Attendances登録された定時データを修正
+	 * @param request 修正対象の情報
+	 * @param userId 修正申告したユーザーのID*/
 	@Override
 	public Attendance updateUserAttendance(Long userId, UserAttendanceUpdateRequestDto request)
 			throws IllegalAccessException {
@@ -299,6 +305,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 		/*時刻とユーザーidで修正対象を検索*/
 		List<Attendance> existingAttendanceOptional = attendanceRepository.findAllByUser_IdAndDate(userId,
 				request.getDate());
+
 		/*修正対象があれば修正をする*/
 		Attendance attendance = existingAttendanceOptional.stream()
 				.max(Comparator.comparing(Attendance::getCreatedAt))
@@ -338,7 +345,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 			attendance.setTotalWorkMin(actualWorkMinutes);
 
 			Long overtime = calculateOvertime(
-					user, attendance.getClockIn(),attendance.getClockOut(),actualWorkMinutes);
+					user, attendance.getClockIn(), attendance.getClockOut(), actualWorkMinutes);
 			attendance.setOvertimeMinutes(overtime);
 		} else {
 			attendance.setTotalBreakMin(null);
@@ -399,5 +406,28 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 		return overtime;
 
+	}
+
+	@Override
+	public AttendanceCorrectionRequest correctionRequest(Long userId, CorrectionRequestDto dto) {
+		//ユーザーの存在を確認
+		User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
+
+		//対象の勤務時刻があるか確認
+		Attendance attendance = attendanceRepository.findByUser_IdAndDate(userId, dto.getTargetDate())
+				.orElseThrow(() -> new RuntimeException("対象の勤務日がありません。"));
+
+		//申請情報を格納
+		AttendanceCorrectionRequest newRequest = new AttendanceCorrectionRequest();
+		newRequest.setRequester(dto.getRequestUserId());
+		newRequest.setAttendance(attendance);
+		newRequest.setRequestedClockIn(dto.getStartTime());
+		newRequest.setRequestedClockOut(dto.getEndTime());
+		newRequest.setReason(dto.getReason());
+		newRequest.setComment(dto.getComment());
+		
+		//申請中のステータスを格納
+		newRequest.setStatus(RequestStatus.PENDING); 
+		return correctionRequest.save(newRequest);
 	}
 }

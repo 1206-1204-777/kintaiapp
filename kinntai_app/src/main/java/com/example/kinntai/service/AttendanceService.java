@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Optional;
 
 import com.example.kinntai.dto.AttendanceResponse;
+import com.example.kinntai.dto.CorrectionRequestDto;
 import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
+import com.example.kinntai.entity.AttendanceCorrectionRequest;
 
 public interface AttendanceService {
 
@@ -53,6 +55,10 @@ public interface AttendanceService {
 
 	List<AttendanceResponse> getAttendanceUser(Long userId);
 	
+	//勤怠時間の修正
 	Attendance updateUserAttendance(Long userId,UserAttendanceUpdateRequestDto request) throws IllegalAccessException;
+	
+	// 勤怠時間の修正申請用メソッド
+	AttendanceCorrectionRequest correctionRequest(Long userId,CorrectionRequestDto dto);
 
 }
