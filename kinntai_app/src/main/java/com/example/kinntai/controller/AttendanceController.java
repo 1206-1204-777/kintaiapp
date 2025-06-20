@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.kinntai.dto.AttendanceResponse;
 import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
+import com.example.kinntai.entity.AttendanceCorrectionRequest;
 import com.example.kinntai.service.AttendanceService;
 
 @RestController
@@ -138,10 +139,10 @@ public class AttendanceController {
 	}
 
 	@PostMapping("/update/{userId}")
-	public ResponseEntity<Attendance> updateAttndance(
+	public ResponseEntity<AttendanceCorrectionRequest> updateAttndance(
 			@PathVariable Long userId,
 			@RequestBody UserAttendanceUpdateRequestDto request) throws IllegalAccessException {
-		Attendance attendance = attendanceService.updateUserAttendance(userId, request);
+		AttendanceCorrectionRequest attendance = attendanceService.correctionRequest(userId, request);
 
 		return ResponseEntity.ok(attendance);
 

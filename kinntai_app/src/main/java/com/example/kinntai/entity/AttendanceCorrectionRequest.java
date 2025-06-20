@@ -22,7 +22,7 @@ import lombok.Data;
 
 @Entity
 @Table(name = "attendance_correction_requests")
-@Data
+	@Data
 public class AttendanceCorrectionRequest {
 
     @Id
@@ -36,8 +36,8 @@ public class AttendanceCorrectionRequest {
 
     // 誰からの申請か
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "requester_id", nullable = false)
-    private User requester;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     // 誰が承認/却下したか
     @ManyToOne(fetch = FetchType.LAZY)

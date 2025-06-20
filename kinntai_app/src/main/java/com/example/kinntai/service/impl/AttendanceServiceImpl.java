@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.kinntai.dto.AttendanceResponse;
-import com.example.kinntai.dto.CorrectionRequestDto;
 import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
 import com.example.kinntai.entity.AttendanceCorrectionRequest;
@@ -38,7 +37,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 	private UserRepository userRepository;
 	
 	@Autowired
-	private AttendanceCorrectionRquestsRepository correctionRequest;
+	private AttendanceCorrectionRquestsRepository correctionRequestRquestsRepository;
 
 	/**
 	 * 出勤処理
@@ -409,17 +408,18 @@ public class AttendanceServiceImpl implements AttendanceService {
 	}
 
 	@Override
-	public AttendanceCorrectionRequest correctionRequest(Long userId, CorrectionRequestDto dto) {
+	@Transactional
+	public AttendanceCorrectionRequest correctionRequest(Long userId, UserAttendanceUpdateRequestDto dto) {
 		//ユーザーの存在を確認
 		User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
 
 		//対象の勤務時刻があるか確認
-		Attendance attendance = attendanceRepository.findByUser_IdAndDate(userId, dto.getTargetDate())
+		Attendance attendance = attendanceRepository.findByUser_IdAndDate(userId, dto.getDate())
 				.orElseThrow(() -> new RuntimeException("対象の勤務日がありません。"));
 
 		//申請情報を格納
 		AttendanceCorrectionRequest newRequest = new AttendanceCorrectionRequest();
-		newRequest.setRequester(dto.getRequestUserId());
+		newRequest.setUser(user);
 		newRequest.setAttendance(attendance);
 		newRequest.setRequestedClockIn(dto.getStartTime());
 		newRequest.setRequestedClockOut(dto.getEndTime());
@@ -428,6 +428,8 @@ public class AttendanceServiceImpl implements AttendanceService {
 		
 		//申請中のステータスを格納
 		newRequest.setStatus(RequestStatus.PENDING); 
-		return correctionRequest.save(newRequest);
+		
+		System.out.println(newRequest.getUser().getUsername());
+		return correctionRequestRquestsRepository.save(newRequest);
 	}
 }

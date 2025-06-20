@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "locations")
@@ -28,6 +29,7 @@ public class Location {
 	
 	@OneToMany(mappedBy = "location")
 	@JsonBackReference
+	@ToString.Exclude
 	private List<User> users;
 
 	@Column(nullable = false)
