@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.example.kinntai.dto.AttendanceResponse;
 import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
@@ -29,13 +30,15 @@ import com.example.kinntai.service.AttendanceService;
 
 @Service
 public class AttendanceServiceImpl implements AttendanceService {
+	@Autowired
+	private TransactionTemplate transactionTemplate;
 
 	@Autowired
 	private AttendanceRepository attendanceRepository;
 
 	@Autowired
 	private UserRepository userRepository;
-	
+
 	@Autowired
 	private AttendanceCorrectionRquestsRepository correctionRequestRquestsRepository;
 
@@ -407,29 +410,43 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 	}
 
+	// AttendanceServiceImpl.java に貼り付けてください
+
 	@Override
 	@Transactional
 	public AttendanceCorrectionRequest correctionRequest(Long userId, UserAttendanceUpdateRequestDto dto) {
-		//ユーザーの存在を確認
-		User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
+	    try {
+	        System.out.println("【デバッグログ】1. correctionRequest メソッド開始");
 
-		//対象の勤務時刻があるか確認
-		Attendance attendance = attendanceRepository.findByUser_IdAndDate(userId, dto.getDate())
-				.orElseThrow(() -> new RuntimeException("対象の勤務日がありません。"));
+	        User user = userRepository.findById(userId)
+	                .orElseThrow(() -> new RuntimeException("【デバッグログ】ユーザーが見つかりません。ID: " + userId));
+	        System.out.println("【デバッグログ】2. ユーザー取得完了: " + user.getUsername());
 
-		//申請情報を格納
-		AttendanceCorrectionRequest newRequest = new AttendanceCorrectionRequest();
-		newRequest.setUser(user);
-		newRequest.setAttendance(attendance);
-		newRequest.setRequestedClockIn(dto.getStartTime());
-		newRequest.setRequestedClockOut(dto.getEndTime());
-		newRequest.setReason(dto.getReason());
-		newRequest.setComment(dto.getComment());
-		
-		//申請中のステータスを格納
-		newRequest.setStatus(RequestStatus.PENDING); 
-		
-		System.out.println(newRequest.getUser().getUsername());
-		return correctionRequestRquestsRepository.save(newRequest);
+	        Attendance attendance = attendanceRepository.findByUser_IdAndDate(userId, dto.getDate())
+	                .orElseThrow(() -> new RuntimeException("【デバッグログ】対象の勤務日がありません。日付: " + dto.getDate()));
+	        System.out.println("【デバッグログ】3. 勤怠情報取得完了: " + attendance.getId());
+
+	        AttendanceCorrectionRequest newRequest = new AttendanceCorrectionRequest();
+	        newRequest.setUser(user);
+	        newRequest.setAttendance(attendance);
+	        newRequest.setReason(dto.getReason());
+	        newRequest.setComment(dto.getComment());
+	        newRequest.setRequestedClockIn(dto.getStartTime());
+	        newRequest.setRequestedClockOut(dto.getEndTime());
+	        newRequest.setStatus(RequestStatus.PENDING);
+	        System.out.println("【デバッグログ】4. 保存直前のリクエストオブジェクト準備完了。");
+
+	        AttendanceCorrectionRequest savedEntity = correctionRequestRquestsRepository.saveAndFlush(newRequest);
+	        System.out.println("【デバッグログ】5. saveAndFlush 実行完了。");
+
+	        System.out.println("【デバッグログ】6. メソッド正常終了、コミットされるはず。");
+	        return savedEntity;
+
+	    } catch (Exception e) {
+	        System.err.println("【デバッグログ】★★★ メソッド内で予期せぬ例外をキャッチしました！ ★★★");
+	        e.printStackTrace();
+	        // 例外を再度スローすることで、トランザクションが正しくロールバックされることを保証します
+	        throw new RuntimeException("correctionRequest処理中にエラーが発生しました", e);
+	    }
 	}
 }
