@@ -118,6 +118,7 @@ public class WeeklySummalyServiceImpl implements WeeklySummalyService {
 	 * Excelレポートファイルを生成するプライベートメソッド
 	 * @throws java.io.IOException 
 	 */
+	@SuppressWarnings("unused")
 	private Resource createExcelReport(User user, WeeklySummary summary, List<Attendance> dailyAttendances)
 			throws IOException, java.io.IOException {
 		// 1. テンプレートファイルを読み込む
