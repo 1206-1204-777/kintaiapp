@@ -52,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
 				.username(request.getUsername())
 				.email(request.getEmail())
 				.password(encodedPassword)
-				.role(UserRole.USER)
+				.role(UserRole.GENERAL_USER)
 				.build();
 
 		User savedUser = userRepository.save(newUser);
