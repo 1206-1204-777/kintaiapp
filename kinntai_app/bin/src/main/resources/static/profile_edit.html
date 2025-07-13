@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザープロフィール編集</title>
+    <link rel="stylesheet" href="css/style.css"> </head>
+<body>
+    <header>
+        <h1>ユーザープロフィール編集</h1>
+        <button onclick="location.href='/logout'">ログアウト</button>
+    </header>
+
+    <main>
+        <section>
+            <h2>プロフィール情報</h2>
+            <form id="userProfileForm">
+                <input type="hidden" id="profileUserId">
+
+                <div>
+                    <label for="profileUsername">ユーザー名:</label>
+                    <input type="text" id="profileUsername" name="username" required>
+                </div>
+                <div>
+                    <label for="profileEmail">メールアドレス:</label>
+                    <input type="email" id="profileEmail" name="email" required>
+                </div>
+                <div>
+                    <label for="profileDefaultStartTime">デフォルト出勤時間:</label>
+                    <input type="time" id="profileDefaultStartTime" name="defaultStartTime">
+                </div>
+                <div>
+                    <label for="profileDefaultEndTime">デフォルト退勤時間:</label>
+                    <input type="time" id="profileDefaultEndTime" name="defaultEndTime">
+                </div>
+                
+                <div id="profileMessage" style="margin-top: 10px; font-weight: bold;"></div>
+
+                <button type="submit">プロフィールを保存</button>
+                <button type="button" onclick="location.href='/index.html'">勤怠管理画面へ戻る</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        </footer>
+
+    <script src="js/profile_edit.js"></script> <script src="js/common.js"></script> </body>
+</html>		

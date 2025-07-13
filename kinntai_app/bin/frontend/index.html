@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>勤怠管理システム - 開発環境</title>
+  <style>
+    .attendance-card { border: 1px solid #ddd; padding: 1rem; margin: 1rem 0; border-radius: 8px; }
+    .time-row { display: flex; justify-content: space-between; margin: 0.5rem 0; }
+    .label { font-weight: bold; }
+    .loading { text-align: center; color: #666; }
+    .error { color: red; text-align: center; }
+    body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+    
+    /* Phase用の追加スタイル */
+    .phase-section {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      border: 2px solid #4a6da7;
+      border-radius: 8px;
+      background: #f8f9fa;
+    }
+    .phase-title {
+      color: #4a6da7;
+      margin-top: 0;
+      font-size: 1.3rem;
+    }
+    .test-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .test-buttons button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-warning { background: #ffc107; color: black; }
+    .btn-info { background: #17a2b8; color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+    
+    /* 完了したPhaseのスタイル */
+    .phase-completed {
+      border-color: #28a745;
+      background: #d4edda;
+    }
+    
+    /* 進行中のPhaseのスタイル */
+    .phase-progress {
+      border-color: #ffc107;
+      background: #fff3cd;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <h1>勤怠管理システム（開発環境）</h1>
+    
+    <!-- Phase 1: 今日の勤怠表示 -->
+    <div class="phase-section phase-completed">
+      <h2 class="phase-title">✅ Phase 1: 今日の勤怠表示（React化完了）</h2>
+      
+      <div class="test-buttons">
+        <button class="btn-primary" onclick="simulateClockIn()">出勤テスト</button>
+        <button class="btn-success" onclick="simulateClockOut()">退勤テスト</button>
+        <button class="btn-warning" onclick="testUpdate()">更新通知テスト</button>
+      </div>
+      
+      <!-- React版の今日の勤怠表示 -->
+      <div id="today-attendance-react"></div>
+    </div>
+
+    <!-- Phase 2: 勤怠履歴テーブル -->
+    <div class="phase-section phase-progress">
+      <h2 class="phase-title">🚀 Phase 2: 勤怠履歴テーブル（React化進行中）</h2>
+      
+      <div class="test-buttons">
+        <button class="btn-info" onclick="testTableUpdate()">テーブル更新テスト</button>
+        <button class="btn-warning" onclick="testMonthChange()">月変更テスト</button>
+        <button class="btn-success" onclick="testCsvExport()">CSV出力テスト</button>
+      </div>
+      
+      <!-- React版の勤怠履歴テーブル -->
+      <div id="attendance-table-react"></div>
+    </div>
+
+    <!-- 🆕 Phase 3: 休暇管理 -->
+    <div class="phase-section phase-progress">
+      <h2 class="phase-title">🚀 Phase 3: 休暇管理（React化進行中）</h2>
+      
+      <div class="test-buttons">
+        <button class="btn-info" onclick="testHolidayUpdate()">休暇データ更新テスト</button>
+        <button class="btn-warning" onclick="testPersonalHoliday()">個人休暇申請テスト</button>
+        <button class="btn-success" onclick="testCompanyHoliday()">会社休暇登録テスト</button>
+        <button class="btn-secondary" onclick="testHolidayCancel()">休暇キャンセルテスト</button>
+      </div>
+      
+      <!-- 🆕 React版の休暇管理 -->
+      <div id="holiday-management-react"></div>
+    </div>
+
+    <!-- 🔮 Phase 4: 統合・最適化（予定） -->
+    <div class="phase-section" style="opacity: 0.6;">
+      <h2 class="phase-title">🔮 Phase 4: 統合・最適化（未実装）</h2>
+      <p style="font-style: italic; color: #666;">
+        Phase 3完了後に実装予定：SPA化、ルーティング、状態管理統合
+      </p>
+    </div>
+  </div>
+  
+  <!-- 開発用のテスト関数 -->
+  <script>
+    // 既存システムのグローバル変数をシミュレート
+    window.currentUserId = 7; // API連携対応
+    
+    // 既存のユーティリティ関数をシミュレート
+    window.formatTime = function(timeStr) {
+      if (!timeStr) return '-';
+      const parts = timeStr.split(':');
+      return `${parts[0]}:${parts[1]}`;
+    };
+    
+    window.calculateWorkHours = function(clockIn, clockOut) {
+      const start = new Date(`1970-01-01T${clockIn}`);
+      const end = new Date(`1970-01-01T${clockOut}`);
+      const diffMs = end - start;
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      return `${hours}時間${minutes}分`;
+    };
+    
+    window.formatMinutesToHoursAndMinutes = function(totalMinutes) {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return hours > 0 ? `${hours}時間${minutes}分` : `${minutes}分`;
+    };
+    
+    // 成功・エラー表示関数
+    window.showAttendanceSuccess = function(message) {
+      console.log('✅ SUCCESS:', message);
+      showToast(message, 'success');
+    };
+    
+    window.showAttendanceError = function(message) {
+      console.log('❌ ERROR:', message);
+      showToast(message, 'error');
+    };
+    
+    function showToast(message, type) {
+      const toast = document.createElement('div');
+      const bgColor = type === 'success' ? '#d4edda' : '#f8d7da';
+      const textColor = type === 'success' ? '#155724' : '#721c24';
+      const borderColor = type === 'success' ? '#c3e6cb' : '#f5c6cb';
+      
+      toast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 1000;
+        background: ${bgColor}; color: ${textColor}; padding: 1rem; border-radius: 4px;
+        border: 1px solid ${borderColor}; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        max-width: 300px; word-wrap: break-word;
+      `;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+      }, 3000);
+    }
+    
+    // Phase 1テスト関数
+    function simulateClockIn() {
+      console.log('出勤テストを実行');
+      window.dispatchEvent(new CustomEvent('attendance-updated'));
+      window.showAttendanceSuccess('出勤テストを実行しました');
+    }
+    
+    function simulateClockOut() {
+      console.log('退勤テストを実行');
+      window.dispatchEvent(new CustomEvent('attendance-updated'));
+      window.showAttendanceSuccess('退勤テストを実行しました');
+    }
+    
+    function testUpdate() {
+      console.log('手動更新テストを実行');
+      window.dispatchEvent(new CustomEvent('attendance-updated'));
+      window.showAttendanceSuccess('手動更新テストを実行しました');
+    }
+    
+    // Phase 2テスト関数
+    function testTableUpdate() {
+      console.log('📊 テーブル更新テストを実行');
+      window.dispatchEvent(new CustomEvent('attendance-updated'));
+      window.showAttendanceSuccess('勤怠履歴テーブルを更新しました');
+    }
+    
+    function testMonthChange() {
+      console.log('📅 月変更テストを実行');
+      window.showAttendanceSuccess('月変更テストを実行しました');
+    }
+    
+    function testCsvExport() {
+      console.log('📄 CSV出力テストを実行');
+      window.showAttendanceSuccess('CSV出力テストを実行しました（モックデータ）');
+    }
+    
+    // 🆕 Phase 3テスト関数
+    function testHolidayUpdate() {
+      console.log('🏖️ 休暇データ更新テストを実行');
+      window.dispatchEvent(new CustomEvent('holiday-updated'));
+      window.showAttendanceSuccess('休暇データを更新しました');
+    }
+    
+    function testPersonalHoliday() {
+      console.log('📝 個人休暇申請テストを実行');
+      window.showAttendanceSuccess('個人休暇申請テストを実行しました（モックデータ）');
+    }
+    
+    function testCompanyHoliday() {
+      console.log('🏢 会社休暇登録テストを実行');
+      window.showAttendanceSuccess('会社休暇登録テストを実行しました（モックデータ）');
+    }
+    
+    function testHolidayCancel() {
+      console.log('❌ 休暇キャンセルテストを実行');
+      window.showAttendanceSuccess('休暇キャンセルテストを実行しました（モックデータ）');
+    }
+    
+    // デバッグ情報表示
+    function showDebugInfo() {
+      console.log('=== 開発環境デバッグ情報 ===');
+      console.log('currentUserId:', window.currentUserId);
+      console.log('React Devtools:', window.React ? '✅ 利用可能' : '❌ 未検出');
+      console.log('API Proxy:', window.location.origin + '/api');
+      console.log('DOM Elements:', {
+        todayAttendance: !!document.getElementById('today-attendance-react'),
+        attendanceTable: !!document.getElementById('attendance-table-react'),
+        holidayManagement: !!document.getElementById('holiday-management-react')
+      });
+      console.log('==============================');
+    }
+    
+    // ページ読み込み時にデバッグ情報を表示
+    window.addEventListener('load', showDebugInfo);
+  </script>
+  
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー登録</title>
+    <style>
+        body {
+            font-family: 'Meiryo', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error-message {
+            color: #f44336;
+            margin-top: 15px;
+            text-align: center;
+        }
+        .links {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .links a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ユーザー登録</h1>
+        
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+        
+        <form id="signupForm">
+            <div class="form-group">
+                <label for="username">ユーザー名</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="fullName">氏名</label>
+                <input type="text" id="fullName" name="fullName" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">パスワード（確認）</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            
+            <button type="submit">登録</button>
+        </form>
+        
+        <div class="links">
+            <p>すでにアカウントをお持ちの方は <a href="login.html">ログイン</a></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const fullName = document.getElementById('fullName').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // 入力チェック
+            if (!username || !fullName || !password || !confirmPassword) {
+                showError("すべてのフィールドを入力してください");
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showError("パスワードが一致しません");
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        fullName: fullName,
+                        password: password
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // トークンとユーザー情報をローカルストレージに保存
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('userId', data.id);
+                    localStorage.setItem('username', data.username);
+                    localStorage.setItem('fullName', data.fullName);
+                    
+                    // メイン画面にリダイレクト
+                    window.location.href = "index.html";
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    if (errorData && errorData.message) {
+                        showError(errorData.message);
+                    } else {
+                        showError("ユーザー登録に失敗しました");
+                    }
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                showError("サーバーとの通信中にエラーが発生しました");
+            }
+        });
+        
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

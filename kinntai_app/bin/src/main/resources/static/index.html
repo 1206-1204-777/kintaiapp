@@ -1,0 +1,2844 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>勤怠管理システム</title>
+<style>
+        /* リセットCSS */
+        * {
+            box-sizing: border-box;
+        }
+
+        /* 基本スタイル */
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* ヘッダー */
+        .header {
+            background-color: #4a6da7;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: clamp(18px, 4vw, 24px);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-name {
+            font-weight: bold;
+            font-size: clamp(14px, 3vw, 16px);
+        }
+
+        .logout-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        /* コンテナ */
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        /* セクション */
+        .section {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #4a6da7;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: clamp(18px, 3.5vw, 22px);
+        }
+
+        h3 {
+            font-size: clamp(16px, 3vw, 18px);
+        }
+
+        /* 時刻表示 */
+        .time-display {
+            font-size: clamp(20px, 5vw, 24px);
+            font-weight: bold;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        /* 勤怠ステータス */
+        .attendance-status {
+            text-align: center;
+            font-size: clamp(16px, 3.5vw, 18px);
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        .status-working {
+            color: #28a745;
+            background-color: #d4edda;
+        }
+
+        .status-off {
+            color: #6c757d;
+            background-color: #f8f9fa;
+        }
+
+        .status-breaking {
+            color: #fd7e14;
+            background-color: #fff3cd;
+        }
+
+        /* ボタンコンテナ */
+        .button-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        /* ボタン共通スタイル */
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: clamp(14px, 3vw, 16px);
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            min-width: 100px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .clock-in-button {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .clock-out-button {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .break-button-start {
+            background-color: #fd7e14;
+            color: white;
+        }
+
+        .break-button-end {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        /* メッセージ */
+        .error-message, .success-message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 10px;
+            font-style: italic;
+            color: #666;
+        }
+
+        /* テーブル */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            min-width: 500px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #4a6da7;
+            color: white;
+            font-weight: normal;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        /* 月選択 */
+        .month-selector {
+            margin: 15px 0;
+        }
+
+        .month-selector input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: auto;
+            max-width: 200px;
+        }
+
+        /* フォーム要素 */
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: clamp(14px, 2.5vw, 16px);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+            padding-right: 40px;
+        }
+
+        /* モックアップナビゲーション */
+        .mockup-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            background-color: #4a6da7;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .mockup-nav button {
+            background-color: #6c87b5;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: clamp(12px, 2.5vw, 14px);
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .mockup-nav button:hover {
+            background-color: #5a77a5;
+        }
+
+        .mockup-nav button.active {
+            background-color: #28a745;
+        }
+
+        /* スクリーン表示制御 */
+        .mockup-screen {
+            display: none;
+        }
+
+        .mockup-screen.active {
+            display: block;
+        }
+
+        /* フレックスコンテナ */
+        .flex-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .flex-item {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        /* タブ */
+        .tabs {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border-bottom: 1px solid #ddd;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+            background-color: #f0f0f0;
+            white-space: nowrap;
+            font-size: clamp(14px, 2.5vw, 16px);
+        }
+
+        .tab-item.active {
+            background-color: white;
+            border-color: #ddd;
+            border-bottom-color: white;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            background-color: white;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 情報ボックス */
+        .info-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #4a6da7;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* ステータスサークル */
+        .status-circle {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        /* モバイル対応 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 15px;
+            }
+
+            .header h1 {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .user-info {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .container {
+                padding: 0 10px;
+                margin: 10px auto;
+            }
+
+            .section {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .mockup-nav {
+                padding: 5px;
+                gap: 5px;
+            }
+
+            .mockup-nav button {
+                padding: 8px 10px;
+                font-size: 12px;
+                min-width: 80px;
+            }
+
+            .flex-container {
+                gap: 10px;
+            }
+
+            .flex-item {
+                min-width: 100%;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+
+            /* ボタンサイズの調整 */
+            button {
+                padding: 8px 15px;
+                min-width: 80px;
+                font-size: 14px;
+            }
+
+            /* 出勤・退勤ボタンのサイズ調整 */
+            .clock-in-button, .clock-out-button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+
+            .tab-item {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+
+            /* モバイルでのテーブル最適化 */
+            .table-wrapper {
+                margin: 0 -15px;
+                padding: 0 15px;
+            }
+
+            /* 小さい画面用の操作ボタン */
+            td button {
+                padding: 5px 8px;
+                font-size: 12px;
+            }
+
+            /* フォーム内のボタン */
+            .button-container button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+
+            /* ログアウトボタン */
+            .logout-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            /* タブのサイズ調整 */
+            .tabs {
+                gap: 2px;
+            }
+
+            .tab-item {
+                padding: 6px 12px;
+                font-size: 13px;
+                margin-right: 2px;
+            }
+
+            /* 入力フィールドのサイズ調整 */
+            input, select, textarea {
+                padding: 8px;
+                font-size: 14px;
+            }
+
+            /* 時刻表示のサイズ調整 */
+            .time-display {
+                font-size: 20px;
+            }
+
+            /* ステータス表示のサイズ調整 */
+            .attendance-status {
+                font-size: 16px;
+                padding: 8px;
+            }
+
+            /* 見出しのサイズ調整 */
+            h2 {
+                font-size: 18px;
+            }
+
+            h3 {
+                font-size: 16px;
+            }
+
+            h4 {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .mockup-nav button {
+                flex: 1 1 calc(50% - 5px);
+            }
+
+            .button-container {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .button-container button {
+                width: 100%;
+            }
+
+            /* 特に小さい画面では出勤・退勤ボタンを横並びに */
+            .button-container:has(.clock-in-button) {
+                flex-direction: row;
+            }
+
+            .button-container:has(.clock-in-button) button {
+                flex: 1;
+            }
+
+            .time-display {
+                font-size: 20px;
+            }
+
+            h2 {
+                font-size: 18px;
+            }
+
+            /* 極小画面でのテーブル調整 */
+            th, td {
+                padding: 6px 8px;
+                font-size: 12px;
+            }
+
+            /* ナビゲーションボタンのさらなる調整 */
+            .mockup-nav button {
+                padding: 6px 8px;
+                font-size: 11px;
+                min-width: auto;
+            }
+
+            /* ログアウトボタンの調整 */
+            .logout-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+
+            /* 入力フィールドの調整 */
+            input, select, textarea {
+                padding: 6px;
+                font-size: 14px;
+            }
+
+            /* ボタンの最小化 */
+            button {
+                padding: 6px 12px;
+                font-size: 13px;
+                min-width: auto;
+            }
+
+            td button {
+                padding: 4px 6px;
+                font-size: 11px;
+            }
+        }
+
+        /* タブレット対応 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .container {
+                padding: 0 20px;
+            }
+
+            .flex-item {
+                min-width: calc(50% - 10px);
+            }
+        }
+
+        /* 印刷対応 */
+        @media print {
+            .mockup-nav,
+            .logout-btn,
+            button,
+            .error-message,
+            .success-message {
+                display: none !important;
+            }
+
+            body {
+                background-color: white;
+            }
+
+            .section {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
+            }
+
+            table {
+                font-size: 12px;
+            }
+        }
+
+        /* アクセシビリティ向上 */
+        button:focus,
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: 2px solid #4a6da7;
+            outline-offset: 2px;
+        }
+
+        /* タッチデバイス対応 */
+        @media (hover: none) {
+            button:hover {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+<h1>勤怠管理システム</h1>
+<div class="user-info">
+<span class="user-name" id="userDisplay">山田 太郎</span>
+<button class="logout-btn" id="logoutBtn">ログアウト</button>
+</div>
+</div>
+<div class="container">
+<div class="mockup-nav">
+<button class="active" onclick="showScreen('attendance')">勤怠登録</button>
+<button onclick="showScreen('edit')">勤怠修正</button>
+<button onclick="showScreen('holiday')">休日登録</button>
+<button onclick="showScreen('export')">エクセル出力</button>
+<button onclick="showScreen('location')">勤務地登録</button>
+</div>
+<div class="mockup-screen active" id="attendance">
+<div class="section">
+<h2>打刻</h2>
+<div class="error-message" id="errorMessage"></div>
+<div class="success-message" id="successMessage"></div>
+<div class="time-display" id="currentTime">15:30:45</div>
+<div class="attendance-status" id="attendanceStatus">
+<span class="status-circle"></span>状態確認中...
+                </div>
+<div class="button-container">
+<button class="clock-in-button" disabled="" id="clockInButton">出勤</button>
+<button class="clock-out-button" disabled="" id="clockOutButton">退勤</button>
+</div>
+<div class="loading" id="loading" style="display: none;">処理中...</div>
+</div>
+<div class="section">
+<h2>今日の勤怠</h2>
+<p><strong>定時時刻:</strong> <span id="scheduledTime">-</span></p>
+<p><strong>出勤時刻:</strong> <span id="todayClockIn">-</span></p>
+<p><strong>退勤時刻:</strong> <span id="todayClockOut">-</span></p>
+<p><strong>残業時間:</strong> <span id="todayWorkHours">-</span></p>
+<p><strong>休憩時間:</strong> <span id="todayTotalBreakHours">-</span></p>
+</div>
+<div class="section">
+<h2>勤怠履歴</h2>
+<div class="tab-container">
+<ul class="tabs">
+<li class="tab-item active" onclick="changeTab('daily')">日次</li>
+<li class="tab-item" onclick="changeTab('weekly')">週次</li>
+<li class="tab-item" onclick="changeTab('monthly')">月次</li>
+</ul>
+<div class="tab-content active" id="daily">
+<div class="month-selector">
+<label for="monthSelect">月を選択:</label>
+<input id="monthSelect" type="month" value="2025-05"/>
+</div>
+<div class="loading" id="tableLoading" style="display: none;">読み込み中...</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>日付</th>
+<th>出勤時間</th>
+<th>退勤時間</th>
+<th>勤務時間</th>
+<th>残業時間</th>
+<th>休憩時間</th>
+<th>状態</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="attendanceTable">
+<tr>
+<td colspan="7" style="text-align: center;">読み込み中...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="tab-content" id="weekly">
+<div class="month-selector">
+<label for="weekSelect">週を選択:</label>
+<input id="weekSelect" type="week" value="2025-W21"/>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>週</th>
+<th>期間</th>
+<th>出勤日数</th>
+<th>総実働時間</th>
+<th>総残業時間</th>
+<th>詳細</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第3週</td>
+<td>2025/05/19〜2025/05/25</td>
+<td>3日</td>
+<td>18時間0分</td>
+<td>1時間0分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+</tr>
+<tr>
+<td>第2週</td>
+<td>2025/05/12〜2025/05/18</td>
+<td>5日</td>
+<td>40時間30分</td>
+<td>5時間30分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+</tr>
+<tr>
+<td>第1週</td>
+<td>2025/05/05〜2025/05/11</td>
+<td>4日</td>
+<td>32時間0分</td>
+<td>0時間0分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="tab-content" id="monthly">
+<div class="month-selector">
+<label for="monthSelectReport">月を選択:</label>
+<input id="monthSelectReport" type="month" value="2025-05"/>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>月</th>
+<th>出勤日数</th>
+<th>総実働時間</th>
+<th>総残業時間</th>
+<th>詳細</th>
+<th>CSVダウンロード</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025年5月</td>
+<td>12日</td>
+<td>90時間30分</td>
+<td>6時間30分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+<td>
+<button onclick="showScreen('export')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">CSV</button>
+</td>
+</tr>
+<tr>
+<td>2025年4月</td>
+<td>20日</td>
+<td>160時間45分</td>
+<td>8時間45分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+<td>
+<button onclick="showScreen('export')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">CSV</button>
+</td>
+</tr>
+<tr>
+<td>2025年3月</td>
+<td>22日</td>
+<td>176時間15分</td>
+<td>0時間15分</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+<td>
+<button onclick="showScreen('export')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">CSV</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mockup-screen" id="edit">
+<div class="section">
+<h2>勤怠修正</h2>
+<div class="error-message" id="editErrorMessage"></div>
+<div class="success-message" id="editSuccessMessage"></div>
+<form id="editForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="edit-date">修正日</label>
+<input id="edit-date" name="date" required="" type="date" value="2025-05-21"/>
+</div>
+<div class="flex-item">
+<label for="edit-reason">修正理由</label>
+<select id="edit-reason" name="reason" required="">
+<option value="">選択してください</option>
+<option value="forgot">打刻忘れ</option>
+<option value="error">打刻ミス</option>
+<option value="system">システムエラー</option>
+<option value="other">その他</option>
+</select>
+</div>
+</div>
+<div class="flex-container">
+<div class="flex-item">
+<label for="edit-start-time">出勤時刻</label>
+<input id="edit-start-time" name="startTime" type="time" value="09:05"/>
+</div>
+<div class="flex-item">
+<label for="edit-end-time">退勤時刻</label>
+<input id="edit-end-time" name="endTime" type="time"/>
+</div>
+</div>
+<div class="flex-container">
+<div class="flex-item">
+<label for="edit-comment">備考</label>
+<textarea id="edit-comment" name="comment" rows="3"></textarea>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #4a6da7; color: white;" type="submit">修正申請</button>
+<button onclick="showScreen('attendance')" style="background-color: #6c757d; color: white;" type="button">キャンセル</button>
+</div>
+</form>
+</div>
+<div class="section">
+<h2>修正申請履歴</h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>申請日</th>
+<th>対象日</th>
+<th>修正内容</th>
+<th>申請理由</th>
+<th>ステータス</th>
+<th>承認者</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025/05/15</td>
+<td>2025/05/14</td>
+<td>退勤: 18:00 → 19:30</td>
+<td>打刻忘れ</td>
+<td><span style="color: #4CAF50;">承認済</span></td>
+<td>鈴木 部長</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+</tr>
+<tr>
+<td>2025/05/10</td>
+<td>2025/05/10</td>
+<td>出勤: 10:30 → 09:00</td>
+<td>システムエラー</td>
+<td><span style="color: #4CAF50;">承認済</span></td>
+<td>鈴木 部長</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;">詳細</button>
+</td>
+</tr>
+<tr>
+<td>2025/05/21</td>
+<td>2025/05/20</td>
+<td>出勤: 08:50 → 09:00</td>
+<td>打刻ミス</td>
+<td><span style="color: #fd7e14;">申請中</span></td>
+<td>-</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">取消</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="mockup-screen" id="holiday">
+<div class="section">
+<h2>休日登録</h2>
+<div class="error-message" id="holidayErrorMessage"></div>
+<div class="success-message" id="holidaySuccessMessage"></div>
+<div class="tab-container">
+<ul class="tabs">
+<li class="tab-item active" onclick="changeHolidayTab('personal')">個人休日</li>
+<li class="tab-item" onclick="changeHolidayTab('company')">現場休日</li>
+</ul>
+<div class="tab-content active" id="personal">
+<form id="personalHolidayForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="holiday-date">休日日付 <span style="color: red;">*</span></label>
+<input id="holiday-date" name="date" required="" type="date"/>
+</div>
+<div class="flex-item">
+<label for="holiday-type">休日種別 <span style="color: red;">*</span></label>
+<select id="holiday-type" name="type" required="">
+<option value="">選択してください</option>
+<option value="paid">有給休暇</option>
+<option value="special">特別休暇</option>
+<option value="sick">病気休暇</option>
+<option value="other">その他</option>
+</select>
+</div>
+</div>
+<div class="flex-container">
+<div class="flex-item">
+<label for="holiday-reason">理由</label>
+<textarea id="holiday-reason" name="reason" rows="3"></textarea>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #4a6da7; color: white;" type="submit">申請</button>
+<button onclick="clearHolidayForm()" style="background-color: #6c757d; color: white;" type="button">クリア</button>
+</div>
+</form>
+<h3>休日申請履歴</h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>申請日</th>
+<th>休日日付</th>
+<th>休日種別</th>
+<th>ステータス</th>
+<th>承認者</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="personalHolidayTable">
+<tr>
+<td colspan="6" style="text-align: center;">読み込み中...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="tab-content" id="company">
+<form id="companyHolidayForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="company-holiday-date">休日日付 <span style="color: red;">*</span></label>
+<input id="company-holiday-date" name="date" required="" type="date"/>
+</div>
+<div class="flex-item">
+<label for="company-holiday-name">休日名 <span style="color: red;">*</span></label>
+<input id="company-holiday-name" name="name" required="" type="text"/>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #4a6da7; color: white;" type="submit">登録</button>
+<button onclick="clearCompanyHolidayForm()" style="background-color: #6c757d; color: white;" type="button">クリア</button>
+</div>
+</form>
+<h3>現場休日一覧</h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>日付</th>
+<th>休日名</th>
+<th>登録者</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="companyHolidayTable">
+<tr>
+<td colspan="4" style="text-align: center;">読み込み中...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mockup-screen" id="export">
+<div class="section">
+<h2>勤怠データ出力</h2>
+<div class="error-message" id="exportErrorMessage"></div>
+<div class="success-message" id="exportSuccessMessage"></div>
+<div class="tab-container">
+<ul class="tabs">
+<li class="tab-item active" onclick="changeExportTab('personal')">個人データ</li>
+<li class="tab-item" onclick="changeExportTab('department')">部門データ</li>
+<li class="tab-item" onclick="changeExportTab('all')">全社データ</li>
+</ul>
+<div class="tab-content active" id="export-personal">
+<form id="exportPersonalForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="export-year-month">年月</label>
+<input id="export-year-month" name="yearMonth" type="month" value="2025-05"/>
+</div>
+<div class="flex-item">
+<label for="export-format">出力形式</label>
+<select id="export-format" name="format">
+<option value="csv">CSV形式</option>
+<option value="excel">Excel形式</option>
+</select>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #28a745; color: white;" type="submit">ダウンロード</button>
+</div>
+</form>
+<h3>ダウンロード履歴</h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>ダウンロード日時</th>
+<th>期間</th>
+<th>形式</th>
+<th>再ダウンロード</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025/05/20 10:25</td>
+<td>2025年4月</td>
+<td>Excel</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">再ダウンロード</button>
+</td>
+</tr>
+<tr>
+<td>2025/04/30 17:50</td>
+<td>2025年4月</td>
+<td>CSV</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">再ダウンロード</button>
+</td>
+</tr>
+<tr>
+<td>2025/04/01 09:15</td>
+<td>2025年3月</td>
+<td>Excel</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #28a745; color: white;">再ダウンロード</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="tab-content" id="export-department">
+<div class="info-box">
+<p>部門データの出力は管理者権限が必要です。</p>
+</div>
+<form id="exportDepartmentForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="export-dept-year-month">年月</label>
+<input id="export-dept-year-month" name="yearMonth" type="month" value="2025-05"/>
+</div>
+<div class="flex-item">
+<label for="export-department">部門</label>
+<select id="export-department" name="department">
+<option value="all">全部門</option>
+<option value="dev">開発部</option>
+<option value="sales">営業部</option>
+<option value="admin">総務部</option>
+</select>
+</div>
+<div class="flex-item">
+<label for="export-dept-format">出力形式</label>
+<select id="export-dept-format" name="format">
+<option value="csv">CSV形式</option>
+<option value="excel">Excel形式</option>
+</select>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #28a745; color: white;" type="submit">ダウンロード</button>
+</div>
+</form>
+</div>
+<div class="tab-content" id="export-all">
+<div class="info-box">
+<p>全社データの出力は管理者権限が必要です。</p>
+</div>
+<form id="exportAllForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="export-all-year-month">年月</label>
+<input id="export-all-year-month" name="yearMonth" type="month" value="2025-05"/>
+</div>
+<div class="flex-item">
+<label for="export-location">勤務地</label>
+<select id="export-location" name="location">
+<option value="all">全拠点</option>
+<option value="tokyo">東京オフィス</option>
+<option value="osaka">大阪オフィス</option>
+<option value="nagoya">名古屋オフィス</option>
+</select>
+</div>
+<div class="flex-item">
+<label for="export-all-format">出力形式</label>
+<select id="export-all-format" name="format">
+<option value="csv">CSV形式</option>
+<option value="excel">Excel形式</option>
+</select>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #28a745; color: white;" type="submit">ダウンロード</button>
+</div>
+</form>
+<h3>集計レポート</h3>
+<div class="flex-container">
+<div class="flex-item section" style="margin-top: 10px;">
+<h4>月次勤務時間レポート</h4>
+<p>全社員の勤務時間集計</p>
+<button style="background-color: #28a745; color: white; margin-top: 10px;">Excelダウンロード</button>
+</div>
+<div class="flex-item section" style="margin-top: 10px;">
+<h4>残業時間レポート</h4>
+<p>部門別・個人別の残業時間集計</p>
+<button style="background-color: #28a745; color: white; margin-top: 10px;">Excelダウンロード</button>
+</div>
+<div class="flex-item section" style="margin-top: 10px;">
+<h4>勤怠異常レポート</h4>
+<p>未打刻・休日出勤・長時間労働の検出</p>
+<button style="background-color: #28a745; color: white; margin-top: 10px;">Excelダウンロード</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mockup-screen" id="location">
+<div class="section">
+<h2>勤務地登録</h2>
+<div class="error-message" id="locationErrorMessage"></div>
+<div class="success-message" id="locationSuccessMessage"></div>
+<form id="locationForm">
+<div class="flex-container">
+<div class="flex-item">
+<label for="location-name">勤務地名 <span style="color: red;">*</span></label>
+<input id="location-name" name="name" required="" type="text"/>
+</div>
+</div>
+<div class="flex-container">
+<div class="flex-item">
+<label for="location-start-time">標準出勤時間 <span style="color: red;">*</span></label>
+<input id="location-start-time" name="startTime" required="" type="time" value="09:00"/>
+</div>
+<div class="flex-item">
+<label for="location-end-time">標準退勤時間 <span style="color: red;">*</span></label>
+<input id="location-end-time" name="endTime" required="" type="time" value="18:00"/>
+</div>
+</div>
+<div class="button-container">
+<button style="background-color: #4a6da7; color: white;" type="submit">登録</button>
+<button onclick="clearLocationForm()" style="background-color: #6c757d; color: white;" type="button">クリア</button>
+</div>
+</form>
+<h3>登録済み勤務地一覧</h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>登録者ID</th>
+<th>勤務地ID</th>
+<th>勤務地名</th>
+<th>標準出勤時間</th>
+<th>標準退勤時間</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="locationTable">
+<tr>
+<td>山田 太郎</td>
+<td>1</td>
+<td>東京オフィス</td>
+<td>09:00</td>
+<td>18:00</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+</td>
+</tr>
+<tr>
+<td>山田 太郎</td>
+<td>2</td>
+<td>大阪オフィス</td>
+<td>09:30</td>
+<td>18:30</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+</td>
+</tr>
+<tr>
+<td>山田 太郎</td>
+<td>3</td>
+<td>名古屋オフィス</td>
+<td>09:00</td>
+<td>17:30</td>
+<td>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<script>
+        // グローバル変数
+        let refreshTimer = null;
+        let currentUserId = null;
+        let currentUsername = null;
+        let currentUserRole = null; // ユーザーロールも追加
+        let jwtToken = null; // JWTトークンも追加
+
+       // 認証チェックと初期化
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            // ローカルストレージからJWTトークンを取得
+            jwtToken = localStorage.getItem('jwtToken');
+            
+            // JWTトークンがない場合は、ログインページへリダイレクト
+            if (!jwtToken) {
+                window.location.href = 'login.html';
+                return; // ここで処理を中断
+            }
+
+            // JWTトークンが存在する場合のみ、ユーザー情報を取得し、アプリケーションを初期化
+            currentUserId = localStorage.getItem('userId');
+            currentUsername = localStorage.getItem('username');
+            currentUserRole = localStorage.getItem('userRole');
+
+            // ユーザー情報が不完全な場合もログインページへリダイレクト
+            if (!currentUserId || !currentUsername || !currentUserRole) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+                return; // ここで処理を中断
+            }
+
+            const userDisplayElement = document.getElementById('userDisplay');
+            if (userDisplayElement) {
+                userDisplayElement.textContent = currentUsername;
+            }
+
+            updateClock();
+            setInterval(updateClock, 1000);
+            startAutoRefresh();
+            initializeApp(); // ここで初めてAPI呼び出しを含む初期化を実行
+
+            const monthSelectElement = document.getElementById('monthSelect');
+            if (monthSelectElement) {
+                monthSelectElement.value = getCurrentMonth();
+            }
+            const exportMonthSelectElement = document.getElementById('export-year-month');
+            if (exportMonthSelectElement) {
+                exportMonthSelectElement.value = getCurrentMonth();
+            }
+            const exportDeptMonthSelectElement = document.getElementById('export-dept-year-month');
+            if (exportDeptMonthSelectElement) {
+                exportDeptMonthSelectElement.value = getCurrentMonth();
+            }
+            const exportAllMonthSelectElement = document.getElementById('export-all-year-month');
+            if (exportAllMonthSelectElement) {
+                exportAllMonthSelectElement.value = getCurrentMonth();
+            }
+            const monthSelectReportElement = document.getElementById('monthSelectReport');
+            if (monthSelectReportElement) {
+                monthSelectReportElement.value = getCurrentMonth();
+            }
+
+            setupEventListeners();
+        } catch (error) {
+            console.error('初期化エラー:', error);
+            showAttendanceError('ページの初期化中にエラーが発生しました。ページをリロードしてください。');
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    });
+        // アプリケーション初期化
+        async function initializeApp() {
+            try {
+                await Promise.all([
+                    loadTodayAttendance(),
+                    loadAttendanceHistory(getCurrentMonth()),
+                    checkAttendanceStatus(),
+                    //loadScheduledTime(),
+                    loadUserRegularHours(),
+                    loadPersonalHolidays(),
+                    loadCompanyHolidays(),
+                    loadLocations()
+                ]);
+            } catch (error) {
+                console.error('アプリケーション初期化エラー:', error);
+                showAttendanceError('データの読み込み中にエラーが発生しました。');
+            }
+        }
+
+        // 自動更新タイマーの開始
+        function startAutoRefresh() {
+            stopAutoRefresh(); // 既存のタイマーがあれば停止
+            
+            refreshTimer = setInterval(async () => {
+                try {
+                    await checkAttendanceStatus();
+                    await loadTodayAttendance();
+                } catch (error) {
+                    console.error('自動更新エラー:', error);
+                }
+            }, 30000); // 30秒ごとに更新
+        }
+
+        // 自動更新タイマーの停止
+        function stopAutoRefresh() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+        }
+
+        // 現在時刻更新
+        function updateClock() {
+            try {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('ja-JP');
+                const currentTimeElement = document.getElementById('currentTime');
+                if (currentTimeElement) {
+                    currentTimeElement.textContent = timeString;
+                }
+            } catch (error) {
+                console.error('時刻更新エラー:', error);
+            }
+        }
+
+        // 現在の年月を取得（YYYY-MM形式）
+        function getCurrentMonth() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        // 今日の勤怠情報を読み込む
+        async function loadTodayAttendance() {
+            try {
+                if (!currentUserId) return;
+
+                const today = new Date().toISOString().split('T')[0];
+                const attendanceResponse = await fetchWithTimeout(`/api/attendance/${currentUserId}/date/${today}`);
+
+                if (attendanceResponse.ok) {
+                    const attendanceData = await attendanceResponse.json();
+
+                    if (attendanceData) {
+                        document.getElementById('todayClockIn').textContent = formatTime(attendanceData.clockIn);
+                        document.getElementById('todayClockOut').textContent = formatTime(attendanceData.clockOut);
+
+                        if (attendanceData.clockIn && attendanceData.clockOut) {
+                            const workHours = calculateWorkHours(attendanceData.clockIn, attendanceData.clockOut);
+                            document.getElementById('todayWorkHours').textContent = 
+                             (attendanceData.overtimeMinutes !== undefined && attendanceData.overtimeMinutes !== null) ? 
+                    			formatMinutesToHoursAndMinutes(attendanceData.overtimeMinutes) : '0分';
+                        } else {
+                            document.getElementById('todayWorkHours').textContent = '-';
+                        }
+
+                        if (attendanceData.totalBreakMinutes !== undefined && attendanceData.totalBreakMinutes !== null) {
+                            document.getElementById('todayTotalBreakHours').textContent = formatMinutesToHoursAndMinutes(attendanceData.totalBreakMinutes);
+                        } else {
+                            document.getElementById('todayTotalBreakHours').textContent = '1時間（自動）';
+                        }
+                    } else {
+                        resetTodayAttendanceDisplay();
+                    }
+                } else {
+                    console.error('今日の勤怠データ取得エラー:', attendanceResponse.status, attendanceResponse.statusText);
+                    resetTodayAttendanceDisplay();
+                }
+            } catch (error) {
+                console.error('今日の勤怠データ取得エラー:', error);
+                resetTodayAttendanceDisplay();
+            }
+        }
+        
+        
+
+        // 今日の勤怠表示をリセット
+        function resetTodayAttendanceDisplay() {
+            document.getElementById('todayClockIn').textContent = '-';
+            document.getElementById('todayClockOut').textContent = '-';
+            document.getElementById('todayWorkHours').textContent = '-';
+            document.getElementById('todayTotalBreakHours').textContent = '-';
+        }
+        
+        
+        async function loadUserRegularHours() {
+    try {
+        if (!currentUserId) return;
+
+        const response = await fetchWithTimeout(`/api/locations/user/${currentUserId}`);
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                console.warn(`User's location not found for user ID: ${currentUserId}. Displaying defaults.`);
+                document.getElementById('scheduledTime').textContent = '未設定'; // 定時時刻
+            } else {
+                throw new Error(`定時時刻取得失敗 (${response.status})`);
+            }
+            return;
+        }
+
+        const locationData = await response.json();
+
+        if (locationData && locationData.startTime && locationData.endTime) {
+            // HTMLの「定時時刻:」のspan (scheduledTime) に定時出勤〜定時退勤と定時実労働時間を表示
+            const start = formatLocalTime(locationData.startTime);
+            const end = formatLocalTime(locationData.endTime);
+            
+            // 定時実労働時間を計算
+            const startParts = locationData.startTime.split(':');
+            const endParts = locationData.endTime.split(':');
+            
+            const startDate = new Date();
+            startDate.setHours(parseInt(startParts[0]), parseInt(startParts[1]), 0, 0);
+            const endDate = new Date();
+            endDate.setHours(parseInt(endParts[0]), parseInt(endParts[1]), 0, 0);
+
+            if (endDate.getTime() < startDate.getTime()) {
+                endDate.setDate(endDate.getDate() + 1);
+            }
+
+            const totalDurationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+            const fixedBreakMinutes = 60; // 一律60分
+            const regularWorkMinutesAfterBreak = Math.max(0, totalDurationMinutes - fixedBreakMinutes);
+            const formattedRegularWorkTime = formatMinutesToHoursAndMinutes(regularWorkMinutesAfterBreak); // formatMinutesToHoursAndMinutes関数を利用
+
+            document.getElementById('scheduledTime').textContent = 
+                `${start} ～ ${end} （実労働: ${formattedRegularWorkTime}）`; // ここで定時と実労働時間を結合して表示
+
+        } else {
+            document.getElementById('scheduledTime').textContent = '未設定';
+        }
+
+    } catch (error) {
+        console.error('定時時刻取得エラー:', error);
+        document.getElementById('scheduledTime').textContent = 'エラー';
+    }
+}
+
+        // 勤怠履歴を読み込む
+        async function loadAttendanceHistory(month) {
+            try {
+                if (!currentUserId) return;
+
+                const tableLoadingElement = document.getElementById('tableLoading');
+                if (tableLoadingElement) {
+                    tableLoadingElement.style.display = 'block';
+                }
+
+                console.log(`勤怠履歴取得: userId=${currentUserId}, month=${month}`);
+
+                const response = await fetchWithTimeout(`/api/attendance/monthly/${currentUserId}?month=${month}`);
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    const attendanceTableElement = document.getElementById('attendanceTable');
+                    if (!attendanceTableElement) {
+                        console.error('要素が見つかりません: attendanceTable');
+                        return;
+                    }
+
+                    if (data && data.length > 0) {
+                        renderAttendanceTable(data);
+                    } else {
+                        attendanceTableElement.innerHTML =
+                            '<tr><td colspan="7" style="text-align: center;">記録がありません</td></tr>';
+                    }
+                } else {
+                    console.error('勤怠履歴APIエラー:', response.status, response.statusText);
+                    document.getElementById('attendanceTable').innerHTML =
+                        `<tr><td colspan="7" style="text-align: center;">データの取得に失敗しました (${response.status})</td></tr>`;
+                }
+            } catch (error) {
+                console.error('勤怠履歴取得エラー:', error);
+                const attendanceTableElement = document.getElementById('attendanceTable');
+                if (attendanceTableElement) {
+                    attendanceTableElement.innerHTML =
+                        '<tr><td colspan="7" style="text-align: center;">データの取得に失敗しました</td></tr>';
+                }
+            } finally {
+                const tableLoadingElement = document.getElementById('tableLoading');
+                if (tableLoadingElement) {
+                    tableLoadingElement.style.display = 'none';
+                }
+            }
+        }
+
+        // 勤怠テーブルを描画
+        function renderAttendanceTable(attendances) {
+            try {
+                const tableBody = document.getElementById('attendanceTable');
+                if (!tableBody) {
+                    console.error('要素が見つかりません: attendanceTable');
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+
+                attendances.forEach(item => {
+                    const row = document.createElement('tr');
+
+                    const dateCell = document.createElement('td');
+                    const date = new Date(item.date);
+                    dateCell.textContent = date.toLocaleDateString('ja-JP', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit',
+                        weekday: 'short'
+                    });
+                    row.appendChild(dateCell);
+
+                    const clockInCell = document.createElement('td');
+                    clockInCell.textContent = formatTime(item.clockIn);
+                    row.appendChild(clockInCell);
+
+                    const clockOutCell = document.createElement('td');
+                    clockOutCell.textContent = formatTime(item.clockOut);
+                    row.appendChild(clockOutCell);
+
+			// 実労働時間 (totalWorkMin) を表示 (旧「勤務時間」列)
+            const actualWorkMinutesCell = document.createElement('td');
+            actualWorkMinutesCell.textContent = item.totalWorkMin !== undefined && item.totalWorkMin !== null ?
+                formatMinutesToHoursAndMinutes(item.totalWorkMin) : '-';
+            row.appendChild(actualWorkMinutesCell);
+
+            // 残業時間 (overtimeMinutes) を表示 (旧「休憩時間」列を再利用)
+            const overtimeMinutesCell = document.createElement('td');
+            overtimeMinutesCell.textContent = item.overtimeMinutes !== undefined && item.overtimeMinutes !== null ?
+                formatMinutesToHoursAndMinutes(item.overtimeMinutes) : '0分'; // nullの場合は0分と表示
+            row.appendChild(overtimeMinutesCell);
+
+            // 休憩時間 (totalBreakMin) を表示 (旧「状態」列を再利用)
+            const totalBreakHoursCell = document.createElement('td');
+            totalBreakHoursCell.textContent = item.totalBreakMin !== undefined && item.totalBreakMin !== null ?
+                formatMinutesToHoursAndMinutes(item.totalBreakMin) : '60分（自動）'; // nullの場合は60分と表示
+            row.appendChild(totalBreakHoursCell);
+
+            // 状態 (status) を表示 (旧「操作」列を再利用)
+            const statusCell = document.createElement('td');
+            if (item.clockIn && item.clockOut) {
+                statusCell.innerHTML = '<span style="color: #4CAF50;">完了</span>';
+            } else if (item.clockIn) {
+                statusCell.innerHTML = '<span style="color: #FFC107;">勤務中</span>';
+            } else {
+                statusCell.innerHTML = '<span style="color: #6c757d;">未打刻</span>';
+            }
+            row.appendChild(statusCell);
+
+                    const actionCell = document.createElement('td');
+                    actionCell.innerHTML = '<button onclick="editAttendance(\'' + item.date + '\')" style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">修正</button>';
+                    row.appendChild(actionCell);
+
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('テーブル描画エラー:', error);
+            }
+        }
+
+        // 勤怠修正画面に遷移
+        function editAttendance(date) {
+            document.getElementById('edit-date').value = date;
+            showScreen('edit');
+        }
+
+        // 勤怠状態を確認する
+        async function checkAttendanceStatus() {
+            try {
+                if (!currentUserId) return;
+
+                const statusElement = document.getElementById('attendanceStatus');
+                const clockInBtn = document.getElementById('clockInButton');
+                const clockOutBtn = document.getElementById('clockOutButton');
+
+                if (!statusElement || !clockInBtn || !clockOutBtn) {
+                    console.error('勤怠状態UI要素が見つかりません');
+                    disableAllButtons();
+                    return;
+                }
+
+                disableAllButtons();
+                statusElement.innerHTML = '<span class="status-circle"></span>状態確認中...';
+                statusElement.className = 'attendance-status';
+
+                const response = await fetchWithTimeout(`/api/attendance/${currentUserId}/status`);
+
+                if (!response.ok) {
+                    throw new Error(`ステータス取得失敗 (${response.status})`);
+                }
+
+                const data = await response.json();
+
+                if (data.working) {
+                    statusElement.innerHTML = '<span class="status-circle" style="background-color: #28a745;"></span>勤務中';
+                    statusElement.className = 'attendance-status status-working';
+                    clockOutBtn.disabled = false;
+                } else {
+                    statusElement.innerHTML = '<span class="status-circle" style="background-color: #6c757d;"></span>退勤中';
+                    statusElement.className = 'attendance-status status-off';
+                    clockInBtn.disabled = false;
+                }
+
+            } catch (error) {
+                console.error('勤怠状態確認エラー:', error);
+                const statusElement = document.getElementById('attendanceStatus');
+                if (statusElement) {
+                    statusElement.innerHTML = '<span class="status-circle"></span>ステータス取得エラー';
+                    statusElement.className = 'attendance-status';
+                }
+                disableAllButtons();
+            }
+        }
+
+        // 全てのボタンを無効化
+        function disableAllButtons() {
+            const clockInBtn = document.getElementById('clockInButton');
+            const clockOutBtn = document.getElementById('clockOutButton');
+            
+            if (clockInBtn) clockInBtn.disabled = true;
+            if (clockOutBtn) clockOutBtn.disabled = true;
+        }
+
+        // 出勤処理
+        async function clockIn() {
+            try {
+                if (!currentUserId) {
+                    showAttendanceError('ユーザー情報が見つかりません。再度ログインしてください。');
+                    return;
+                }
+
+                showLoading(true);
+                clearAttendanceMessages();
+                disableAllButtons();
+
+                const response = await fetchWithTimeout(`/api/attendance/clock-in/${currentUserId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    showAttendanceSuccess('出勤打刻が完了しました');
+                    await refreshDataAfterAction();
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    if (errorData && errorData.message) {
+                        showAttendanceError(errorData.message);
+                    } else {
+                        showAttendanceError(`出勤打刻に失敗しました (${response.status})`);
+                    }
+                    await checkAttendanceStatus();
+                }
+            } catch (error) {
+                console.error('出勤打刻エラー:', error);
+                showAttendanceError('サーバーとの通信中にエラーが発生しました');
+                await checkAttendanceStatus();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 退勤処理
+        async function clockOut() {
+            try {
+                if (!currentUserId) {
+                    showAttendanceError('ユーザー情報が見つかりません。再度ログインしてください。');
+                    return;
+                }
+
+                showLoading(true);
+                clearAttendanceMessages();
+                disableAllButtons();
+
+                const response = await fetchWithTimeout(`/api/attendance/clock-out/${currentUserId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    showAttendanceSuccess('退勤打刻が完了しました');
+                    await refreshDataAfterAction();
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    if (errorData && errorData.message) {
+                        showAttendanceError(errorData.message);
+                    } else {
+                        showAttendanceError(`退勤打刻に失敗しました (${response.status})`);
+                    }
+                    await checkAttendanceStatus();
+                }
+            } catch (error) {
+                console.error('退勤打刻エラー:', error);
+                showAttendanceError('サーバーとの通信中にエラーが発生しました');
+                await checkAttendanceStatus();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 操作後のデータ更新
+        async function refreshDataAfterAction() {
+            try {
+                await Promise.all([
+                    loadTodayAttendance(),
+                    checkAttendanceStatus(),
+                    loadAttendanceHistory(getCurrentMonth()),
+                    loadPersonalHolidays(), // 個人休日も更新
+                    loadCompanyHolidays(), // 現場休日も更新
+                    loadLocations() // 勤務地も更新
+                ]);
+            } catch (error) {
+                console.error('データ更新エラー:', error);
+            }
+        }
+
+        // 定時時刻の取得
+        async function loadScheduledTime() {
+            try {
+                if (!currentUserId) return;
+                
+                const response = await fetchWithTimeout(`/api/users/${currentUserId}/info`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const start = data.startTime ? formatLocalTime(data.startTime) : '09:00';
+                    const end = data.endTime ? formatLocalTime(data.endTime) : '18:00';
+                    document.getElementById('scheduledTime').textContent = `${start} ～ ${end}`;
+                } else {
+                    console.error('定時時刻取得APIエラー:', response.status, response.statusText);
+                    document.getElementById('scheduledTime').textContent = '09:00 ～ 18:00';
+                }
+            } catch (e) {
+                console.error('定時時刻取得エラー:', e);
+                document.getElementById('scheduledTime').textContent = '09:00 ～ 18:00';
+            }
+        }
+
+        // 個人休日を読み込む
+        async function loadPersonalHolidays() {
+            try {
+                if (!currentUserId) return;
+                
+                // 変更: 新しいAPIエンドポイント
+                const response = await fetchWithTimeout(`/api/personal-holidays/user/${currentUserId}`); 
+                if (response.ok) {
+                    const data = await response.json();
+                    renderPersonalHolidayTable(data);
+                } else {
+                    console.error('個人休日取得エラー:', response.status);
+                    const tableBody = document.getElementById('personalHolidayTable');
+                    if (tableBody) {
+                        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">データの取得に失敗しました</td></tr>';
+                    }
+                }
+            } catch (error) {
+                console.error('個人休日取得エラー:', error);
+                const tableBody = document.getElementById('personalHolidayTable');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">データの取得に失敗しました</td></tr>';
+                }
+            }
+        }
+
+        // 個人休日テーブルを描画
+        function renderPersonalHolidayTable(holidays) {
+            const tableBody = document.getElementById('personalHolidayTable');
+            if (!tableBody) return;
+
+            // 履歴が空の場合のメッセージも確認
+            if (!holidays || holidays.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">申請履歴がありません</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = '';
+            holidays.forEach(holiday => {
+                const row = document.createElement('tr');
+                
+                const applyDateCell = document.createElement('td');
+                applyDateCell.textContent = formatDate(holiday.createdAt); // DTOではcreatedAt
+                row.appendChild(applyDateCell);
+
+                const holidayDateCell = document.createElement('td');
+                holidayDateCell.textContent = formatDate(holiday.holidayDate);
+                row.appendChild(holidayDateCell);
+
+                const typeCell = document.createElement('td');
+                typeCell.textContent = getHolidayTypeText(holiday.holidayType); // DTOではholidayType (Enum名)
+                row.appendChild(typeCell);
+
+                const statusCell = document.createElement('td');
+                statusCell.innerHTML = getStatusHTML(holiday.status); // DTOではstatus (Enum名)
+                row.appendChild(statusCell);
+
+                const approverCell = document.createElement('td');
+                approverCell.textContent = holiday.approverName || '-'; // DTOではapproverName
+                row.appendChild(approverCell);
+
+                const actionCell = document.createElement('td');
+                // 申請中 (PENDING) のみキャンセルボタンを表示
+                if (holiday.status === 'PENDING') {
+                    actionCell.innerHTML = `<button onclick="cancelPersonalHoliday(${holiday.id}, ${currentUserId})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">取消</button>`;
+                } else {
+                    actionCell.innerHTML = '<button style="padding: 5px 10px; font-size: 0.8rem; background-color: #4a6da7; color: white;" disabled>詳細</button>'; // 詳細ボタンを無効化（デモ用）
+                }
+                row.appendChild(actionCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+       // 現場休日を読み込む
+        async function loadCompanyHolidays() {
+            try {
+                // 変更: 新しいAPIエンドポイント
+                const response = await fetchWithTimeout('/api/company-holidays'); 
+                if (response.ok) {
+                    const data = await response.json();
+                    renderCompanyHolidayTable(data);
+                } else {
+                    console.error('現場休日取得エラー:', response.status);
+                    const tableBody = document.getElementById('companyHolidayTable');
+                    if (tableBody) {
+                        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">データの取得に失敗しました</td></tr>';
+                    }
+                }
+            } catch (error) {
+                console.error('現場休日取得エラー:', error);
+                const tableBody = document.getElementById('companyHolidayTable');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">データの取得に失敗しました</td></tr>';
+                }
+            }
+        }
+// 現場休日テーブルを描画
+        function renderCompanyHolidayTable(holidays) {
+            const tableBody = document.getElementById('companyHolidayTable');
+            if (!tableBody) return;
+
+            if (!holidays || holidays.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">現場休日が登録されていません</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = '';
+            holidays.forEach(holiday => {
+                const row = document.createElement('tr');
+                
+                const dateCell = document.createElement('td');
+                dateCell.textContent = formatDate(holiday.holidayDate);
+                row.appendChild(dateCell);
+
+                const nameCell = document.createElement('td');
+                nameCell.textContent = holiday.holidayName;
+                row.appendChild(nameCell);
+
+                const creatorCell = document.createElement('td');
+                creatorCell.textContent = holiday.createdByUsername || 'システム'; // 変更: createdByUsername
+                row.appendChild(creatorCell);
+
+                const actionCell = document.createElement('td');
+                // 編集・削除ボタンは管理者権限で表示制御が必要な場合がある
+                // バックエンドでcreatedByUsernameを返すようになったため、ここでは単純に表示
+                actionCell.innerHTML = `
+                    <button onclick="editCompanyHoliday(${holiday.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+                    <button onclick="deleteCompanyHoliday(${holiday.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+                `;
+                row.appendChild(actionCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // 勤務地を読み込む
+        async function loadLocations() {
+            try {
+                const response = await fetchWithTimeout('/api/locations');
+                if (response.ok) {
+                    const data = await response.json();
+                    renderLocationTable(data);
+                } else {
+                    console.error('勤務地取得エラー:', response.status);
+                    const tableBody = document.getElementById('locationTable');
+                    if (tableBody) {
+                        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">データの取得に失敗しました</td></tr>';
+                    }
+                }
+            } catch (error) {
+                console.error('勤務地取得エラー:', error);
+                const tableBody = document.getElementById('locationTable');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">データの取得に失敗しました</td></tr>';
+                }
+            }
+        }
+
+        // 勤務地テーブルを描画
+       function renderLocationTable(locations) {
+    const tableBody = document.getElementById('locationTable');
+    if (!tableBody) return;
+
+    if (!locations || locations.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">登録された勤務地がありません</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = '';
+    locations.forEach(location => {
+        const row = document.createElement('tr');
+
+        // 登録者
+        const creatorCell = document.createElement('td');
+        creatorCell.textContent = location.createdBy || '不明';
+        row.appendChild(creatorCell);
+
+        // ID
+        const idCell = document.createElement('td');
+        idCell.textContent = location.id;
+        row.appendChild(idCell);
+
+        // 勤務地名
+        const nameCell = document.createElement('td');
+        nameCell.textContent = location.name;
+        row.appendChild(nameCell);
+
+        // 標準出勤時間
+        const startTimeCell = document.createElement('td');
+        startTimeCell.textContent = formatLocalTime(location.startTime);
+        row.appendChild(startTimeCell);
+
+        // 標準退勤時間
+        const endTimeCell = document.createElement('td');
+        endTimeCell.textContent = formatLocalTime(location.endTime);
+        row.appendChild(endTimeCell);
+
+        // 操作
+        const actionCell = document.createElement('td');
+        actionCell.innerHTML = `
+            <button onclick="editLocation(${location.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #17a2b8; color: white;">編集</button>
+            <button onclick="deleteLocation(${location.id})" style="padding: 5px 10px; font-size: 0.8rem; background-color: #dc3545; color: white;">削除</button>
+        `;
+        row.appendChild(actionCell);
+
+        tableBody.appendChild(row);
+    });
+}
+
+
+
+        // イベントリスナーの設定
+        function setupEventListeners() {
+            try {
+                const clockInButton = document.getElementById('clockInButton');
+                if (clockInButton) {
+                    clockInButton.addEventListener('click', clockIn);
+                }
+
+                const clockOutButton = document.getElementById('clockOutButton');
+                if (clockOutButton) {
+                    clockOutButton.addEventListener('click', clockOut);
+                }
+
+                const monthSelectElement = document.getElementById('monthSelect');
+                if (monthSelectElement) {
+                    monthSelectElement.addEventListener('change', function() {
+                        loadAttendanceHistory(this.value);
+                    });
+                }
+
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        stopAutoRefresh();
+                        localStorage.removeItem('userId');
+                        localStorage.removeItem('username');
+                        window.location.href = 'login.html'; // 実際のログインページにリダイレクト
+                    });
+                }
+
+                // 各フォームのイベントリスナー
+                setupFormEventListeners();
+                
+                // ウィンドウフォーカス時にデータをリフレッシュ
+                window.addEventListener('focus', async () => {
+                    try {
+                        await Promise.all([
+                            checkAttendanceStatus(),
+                            loadTodayAttendance()
+                        ]);
+                    } catch (error) {
+                        console.error('フォーカス時リフレッシュエラー:', error);
+                    }
+                });
+            } catch (error) {
+                console.error('イベントリスナー設定エラー:', error);
+            }
+        }
+
+        // フォームイベントリスナーの設定
+        function setupFormEventListeners() {
+            // 勤怠修正フォーム
+            const editForm = document.getElementById('editForm');
+            if (editForm) {
+                editForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await submitEditForm();
+                });
+            }
+
+            // 個人休日申請フォーム
+            const personalHolidayForm = document.getElementById('personalHolidayForm');
+            if (personalHolidayForm) {
+                personalHolidayForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await submitPersonalHolidayForm();
+                });
+            }
+
+            // 現場休日登録フォーム
+            const companyHolidayForm = document.getElementById('companyHolidayForm');
+            if (companyHolidayForm) {
+                companyHolidayForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await submitCompanyHolidayForm();
+                });
+            }
+
+            // 勤務地登録フォーム
+            const locationForm = document.getElementById('locationForm');
+            if (locationForm) {
+                locationForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await submitLocationForm();
+                });
+            }
+
+            // エクスポートフォーム
+            const exportPersonalForm = document.getElementById('exportPersonalForm');
+            if (exportPersonalForm) {
+                exportPersonalForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await submitExportForm('personal');
+                });
+            }
+            const exportDepartmentForm = document.getElementById('exportDepartmentForm');
+            if (exportDepartmentForm) {
+                exportDepartmentForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await submitExportForm('department');
+                });
+            }
+            const exportAllForm = document.getElementById('exportAllForm');
+            if (exportAllForm) {
+                exportAllForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await submitExportForm('all');
+                });
+            }
+        }
+
+        // 勤怠修正フォーム送信
+        async function submitEditForm() {
+            try {
+                if (!currentUserId) {
+                    showEditError('ユーザー情報が見つかりません。');
+                    return;
+                }
+                const formData = new FormData(document.getElementById('editForm'));
+                const data = {
+                    date: formData.get('date'),
+                    reason: formData.get('reason'),
+                    startTime: formData.get('startTime'),
+                    endTime: formData.get('endTime'),
+                    comment: formData.get('comment')
+                };
+
+                clearEditMessages();
+                
+                const response = await fetchWithTimeout(`/api/attendance/update/${currentUserId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showEditSuccess('勤怠修正申請が送信されました');
+                    document.getElementById('editForm').reset();
+                    await loadAttendanceHistory(getCurrentMonth()); // 修正後に勤怠履歴を再読み込み
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    showEditError(errorData?.message || '修正申請に失敗しました');
+                }
+            } catch (error) {
+                console.error('勤怠修正エラー:', error);
+                showEditError('サーバーとの通信中にエラーが発生しました');
+            }
+        }
+
+        // 個人休日申請フォーム送信
+        async function submitPersonalHolidayForm() {
+            try {
+                if (!currentUserId) {
+                    showHolidayError('ユーザー情報が見つかりません。');
+                    return;
+                }
+                const formData = new FormData(document.getElementById('personalHolidayForm'));
+                const data = {
+                    userId: currentUserId, // 変更: 申請者のIDを含める
+                    holidayDate: formData.get('date'),
+                    holidayType: formData.get('type').toUpperCase(), // 変更: Enumに合わせるために大文字化
+                    reason: formData.get('reason')
+                    // status はバックエンドで PENDING が自動設定されるため、フロントからは送らない
+                };
+
+                clearHolidayMessages();
+                
+                // 変更: 新しいAPIエンドポイント
+                const response = await fetchWithTimeout(`/api/personal-holidays/apply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showHolidaySuccess('休日申請が送信されました');
+                    document.getElementById('personalHolidayForm').reset();
+                    await loadPersonalHolidays(); // 申請履歴を更新
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    showHolidayError(errorData?.message || '休日申請に失敗しました');
+                }
+            } catch (error) {
+                console.error('個人休日申請エラー:', error);
+                showHolidayError('サーバーとの通信中にエラーが発生しました');
+            }
+        }
+        
+        // 個人休日申請をキャンセル
+        async function cancelPersonalHoliday(holidayId, userId) {
+            if (!confirm('この休日申請をキャンセルしてもよろしいですか？')) {
+                return;
+            }
+
+            try {
+                clearHolidayMessages();
+                
+                // 変更: 新しいAPIエンドポイント
+                const response = await fetchWithTimeout(`/api/personal-holidays/${holidayId}/cancel/user/${userId}`, {
+                    method: 'DELETE', // DELETEリクエスト
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    showHolidaySuccess('休日申請がキャンセルされました');
+                    await loadPersonalHolidays(); // 申請履歴を更新
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    showHolidayError(errorData?.message || '休日申請のキャンセルに失敗しました');
+                }
+            } catch (error) {
+                console.error('個人休日キャンセルエラー:', error);
+                showHolidayError('サーバーとの通信中にエラーが発生しました');
+            }
+        }
+
+      // 現場休日登録フォーム送信
+        async function submitCompanyHolidayForm() {
+            try {
+                if (!currentUserId) {
+                    showHolidayError('ユーザー情報が見つかりません。');
+                    return;
+                }
+                const formData = new FormData(document.getElementById('companyHolidayForm'));
+                const data = {
+                    holidayDate: formData.get('date'),
+                    holidayName: formData.get('name'),
+                    createdByUserId: currentUserId // 変更: 登録者のIDを含める
+                };
+
+                clearHolidayMessages();
+                
+                // 変更: 新しいAPIエンドポイント
+                const response = await fetchWithTimeout('/api/company-holidays', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showHolidaySuccess('現場休日が登録されました');
+                    document.getElementById('companyHolidayForm').reset();
+                    await loadCompanyHolidays(); // 現場休日一覧を更新
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    showHolidayError(errorData?.message || '現場休日登録に失敗しました');
+                }
+            } catch (error) {
+                console.error('現場休日登録エラー:', error);
+                showHolidayError('サーバーとの通信中にエラーが発生しました');
+            }
+        }
+        // 現場休日の編集（IDを渡し、編集フォームを表示するなど）
+        window.editCompanyHoliday = function(holidayId) {
+            // alert('現場休日ID ' + holidayId + ' の編集機能はまだ実装されていません。'); // 既存のアラートは削除またはコメントアウト
+            // TODO: 実際の編集機能を実装 - 例: 編集用モーダルフォームを表示し、GET /api/company-holidays/{id} でデータを取得、PUT /api/company-holidays/{id} で更新
+            showHolidaySuccess('現場休日ID ' + holidayId + ' の編集機能を開始します (未実装)。');
+        }
+
+ // 会社休日の削除
+window.deleteCompanyHoliday = async function(holidayId) {
+    console.log("deleteCompanyHoliday function called for ID:", holidayId); // ★この行を追加
+    if (!confirm('この会社休日を削除してもよろしいですか？')) {
+        return;
+    }
+
+    try {
+        clearHolidayMessages();
+
+        if(!currentUserId){
+            showHolidayError('ユーザー情報が見つかりません。');
+            return;
+        }
+        
+        console.log("Attempting to delete holiday. holidayId:", holidayId, "currentUserId:", currentUserId); 
+
+        const response = await fetchWithTimeout(
+            `/api/company-holidays/${holidayId}?currentUser=${currentUserId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+                if (response.ok) {
+                    showHolidaySuccess('現場休日が削除されました');
+                    await loadCompanyHolidays(); // 削除後にリストを更新
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    showHolidayError(errorData?.message || '現場休日の削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('現場休日削除エラー:', error);
+                showHolidayError('サーバーとの通信中にエラーが発生しました');
+            }
+        }
+        // 勤務地登録フォーム送信
+        async function submitLocationForm() {
+            try {
+                if (!currentUserId) {
+                    showLocationError('ユーザー情報が見つかりません。');
+                    return;
+                }
+                const formData = new FormData(document.getElementById('locationForm'));
+                const data = {
+                    name: formData.get('name'),
+                    startTime: formData.get('startTime'),
+                    endTime: formData.get('endTime'),
+                    createdBy: Number(localStorage.getItem("userId")) || 'システム'
+                };
+
+                clearLocationMessages();
+                
+                const response = await fetchWithTimeout('/api/locations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showLocationSuccess('勤務地が登録されました');
+                    document.getElementById('locationForm').reset();
+                    await loadLocations(); // 勤務地リストを更新
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    showLocationError(errorData?.message || '勤務地登録に失敗しました');
+                }
+            } catch (error) {
+                console.error('勤務地登録エラー:', error);
+                showLocationError('サーバーとの通信中にエラーが発生しました');
+            }
+        }
+
+        // エクスポートフォーム送信
+        async function submitExportForm(type) {
+            try {
+                let formData;
+                let endpoint = '';
+                let fileNamePrefix = `attendance_${type}`;
+                let userIdParam = '';
+
+                if (!currentUserId) {
+                    showExportError('ユーザー情報が見つかりません。');
+                    return;
+                }
+        console.log("Attempting to delete holiday. currentUserId:", currentUserId); 
+
+                if (type === 'personal') {
+                    formData = new FormData(document.getElementById('exportPersonalForm'));
+                    endpoint = `/api/export/personal/${currentUserId}`;
+                    userIdParam = `/${currentUserId}`;
+                } else if (type === 'department') {
+                    formData = new FormData(document.getElementById('exportDepartmentForm'));
+                    const department = formData.get('department');
+                    endpoint = `/api/export/department/${department}`;
+                    fileNamePrefix = `attendance_department_${department}`;
+                } else if (type === 'all') {
+                    formData = new FormData(document.getElementById('exportAllForm'));
+                    const location = formData.get('location');
+                    endpoint = `/api/export/all/${location}`;
+                    fileNamePrefix = `attendance_all_${location}`;
+                } else {
+                    showExportError('無効なエクスポートタイプです。');
+                    return;
+                }
+                
+                const yearMonth = formData.get('yearMonth');
+                const format = formData.get('format');
+
+                clearExportMessages();
+                
+                const response = await fetchWithTimeout(`${endpoint}?month=${yearMonth}&format=${format}`, {
+                    method: 'GET'
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${fileNamePrefix}_${yearMonth}.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    showExportSuccess('ダウンロードが開始されました');
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    showExportError(errorData?.message || 'エクスポートに失敗しました');
+                }
+            } catch (error) {
+                console.error('エクスポートエラー:', error);
+                showExportError('サーバーとの通信中にエラーが発生しました');
+            }
+        }
+
+        window.editLocation = function(locationId) {
+            alert('勤務地ID ' + locationId + ' の編集機能はまだ実装されていません。');
+            // 実際の編集機能を実装
+        }
+
+window.deleteLocation = async function(locationId) {
+    if (!confirm('この勤務地を削除してもよろしいですか？')) {
+        return;
+    }
+
+    try {
+        clearLocationMessages(); // 勤務地登録画面のメッセージクリア
+
+        // ログインユーザーIDまたはトークンをリクエストに含める必要があるが、
+        // 現時点ではサーバー側で @AuthenticationPrincipal を使って取得するため、
+        // ここで explicitly 送信する必要はない (JWTが導入されたらAuthorizationヘッダーを使う)
+        
+        const response = await fetchWithTimeout(`/api/locations/${locationId}?currentUserId=${currentUserId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+                // JWT 導入後: 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+
+        if (response.ok) {
+            showLocationSuccess('勤務地が削除されました');
+            await loadLocations(); // 削除後にリストを更新
+        } else if (response.status === 401) {
+            showLocationError('認証が必要です。再度ログインしてください。');
+            // 必要に応じてログインページへリダイレクト
+            // window.location.href = 'login.html';
+        } else if (response.status === 403) {
+            showLocationError('この勤務地を削除する権限がありません。');
+        } else if (response.status === 404) {
+            showLocationError('指定された勤務地が見つかりません。');
+        } else {
+            const errorData = await response.json().catch(() => null);
+            showLocationError(errorData?.message || `勤務地の削除に失敗しました (${response.status})`);
+        }
+    } catch (error) {
+        console.error('勤務地削除エラー:', error);
+        showLocationError('サーバーとの通信中にエラーが発生しました');
+    }
+}
+	
+
+        // 画面切り替え
+        function showScreen(screenId) {
+            document.querySelectorAll('.mockup-screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+
+            // ナビゲーションボタンの状態更新
+            document.querySelectorAll('.mockup-nav button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // クリックされたボタンをactiveにする
+            // event.target はイベントハンドラ内で使用
+            if (event && event.target && event.target.tagName === 'BUTTON') {
+                event.target.classList.add('active');
+            }
+        }
+
+        // タブ切り替え
+        function changeTab(tabId) {
+            // 勤怠履歴のタブ切り替え
+            document.querySelectorAll('#attendance .tab-item').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('#attendance .tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // クリックされたタブをactiveにする
+            if (event && event.target && event.target.tagName === 'LI') {
+                 event.target.classList.add('active');
+            }
+            document.getElementById(tabId).classList.add('active');
+            
+            // 週次・月次タブが選択されたらアラートを表示 (デモ用)
+            if (tabId === 'weekly' || tabId === 'monthly') {
+                showAttendanceSuccess(`${tabId === 'weekly' ? '週次' : '月次'}表示機能はまだ実装中です。`);
+            } else if (tabId === 'daily') {
+                loadAttendanceHistory(getCurrentMonth()); // 日次に戻ったら再読み込み
+            }
+        }
+
+        // 休日タブ切り替え
+        function changeHolidayTab(tabId) {
+            document.querySelectorAll('#holiday .tabs .tab-item').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('#holiday .tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // クリックされたタブをactiveにする
+            if (event && event.target && event.target.tagName === 'LI') {
+                event.target.classList.add('active');
+            }
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // 出力タブ切り替え
+        function changeExportTab(tabId) {
+            document.querySelectorAll('#export .tabs .tab-item').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('#export .tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // クリックされたタブをactiveにする
+            if (event && event.target && event.target.tagName === 'LI') {
+                event.target.classList.add('active');
+            }
+            document.getElementById('export-' + tabId).classList.add('active');
+        }
+
+        // フォームクリア関数
+        function clearLocationForm() {
+            document.getElementById('locationForm').reset();
+        }
+
+        function clearHolidayForm() {
+            document.getElementById('personalHolidayForm').reset();
+        }
+
+        function clearCompanyHolidayForm() {
+            document.getElementById('companyHolidayForm').reset();
+        }
+
+        // タイムアウト付きのfetch関数
+        async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            
+            if (jwtToken) {
+                if (!options.headers) {
+                    options.headers = {};
+                }
+                options.headers['Authorization'] = `Bearer ${jwtToken}`;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    signal: controller.signal
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    console.warn('認証エラーまたは権限エラー。トークンが期限切れの可能性があります。');
+                    alert('セッションが切れました。再度ログインしてください。');
+                    stopAutoRefresh();
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                    throw new Error('Authentication/Authorization Error'); 
+                }
+                return response;
+            } finally {
+                clearTimeout(id);
+            }
+        }
+
+        // ユーティリティ関数
+        function formatTime(timeStr) {
+    if (!timeStr) return '-';
+
+    try {
+        // ISO 形式対応：'2025-05-26T09:37:00' → 時刻抽出
+        const isoMatch = timeStr.match(/T(\d{2}:\d{2})/);
+        if (isoMatch && isoMatch[1]) {
+            return isoMatch[1];
+        }
+
+        // fallback: 時刻のみ形式（"09:37"など）
+        const parts = timeStr.split(':');
+        if (parts.length >= 2) {
+            return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+        }
+
+        return timeStr;
+    } catch (e) {
+        console.error('時刻フォーマットエラー:', e);
+        return '-';
+    }
+}
+
+        function formatLocalTime(timeStr) {
+            if (!timeStr) return '-';
+
+            try {
+                // HH:MM形式の文字列を扱う
+                const parts = timeStr.split(':');
+                if (parts.length >= 2) {
+                    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+                }
+                return timeStr; // それ以外の形式はそのまま返す
+            } catch (e) {
+                console.error('ローカル時刻フォーマットエラー:', e);
+                return '-';
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) {
+                    return dateStr; // 無効な日付の場合は元の文字列を返す
+                }
+                return date.toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            } catch (e) {
+                console.error('日付フォーマットエラー:', e);
+                return dateStr;
+            }
+        }
+
+        function calculateWorkHours(startTime, endTime) {
+            if (!startTime || !endTime) return '-';
+
+            try {
+                // startTimeとendTimeが日付情報を含まない場合を考慮し、今日の日付を付加
+                const today = new Date().toISOString().split('T')[0];
+                const start = new Date(`${today}T${startTime}`).getTime();
+                const end = new Date(`${today}T${endTime}`).getTime();
+                
+                // 退勤時間が翌日になる場合を考慮 (例: 22:00出勤、06:00退勤)
+                if (end < start) {
+                    const nextDayEnd = new Date(`${today}T${endTime}`);
+                    nextDayEnd.setDate(nextDayEnd.getDate() + 1);
+                    end = nextDayEnd.getTime();
+                }
+
+                const diffMs = end - start;
+
+                if (isNaN(diffMs) || diffMs < 0) return '-';
+
+                const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+                return `${hours}時間${minutes}分`;
+            } catch (e) {
+                console.error('勤務時間計算エラー:', e);
+                return '-';
+            }
+        }
+
+        function formatMinutesToHoursAndMinutes(totalMinutes) {
+            if (totalMinutes === undefined || totalMinutes === null || isNaN(totalMinutes)) return '-';
+            if (totalMinutes < 0) totalMinutes = 0;
+
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+
+            if (hours === 0 && minutes === 0) return '0分';
+            if (hours === 0) return `${minutes}分`;
+            if (minutes === 0) return `${hours}時間`;
+            return `${hours}時間${minutes}分`;
+        }
+
+        function getHolidayTypeText(type) {
+            const types = {
+                'PAID': '有給休暇',
+                'SPECIAL': '特別休暇',
+                'SICK': '病気休暇',
+                'OTHER': 'その他'
+            };
+            return types[type] || type; // マッピングがない場合は元の値を返す
+        }
+
+        function getStatusHTML(status) {
+            const statusMap = {
+                'PENDING': '<span style="color: #fd7e14;">申請中</span>',
+                'APPROVED': '<span style="color: #4CAF50;">承認済</span>',
+                'REJECTED': '<span style="color: #dc3545;">却下</span>'
+            };
+            return statusMap[status] || status; // マッピングがない場合は元の値を返す
+        }
+
+        // メッセージ表示関連の関数
+        function clearAttendanceMessages() {
+            const errorElement = document.getElementById('errorMessage');
+            const successElement = document.getElementById('successMessage');
+            
+            if (errorElement) errorElement.style.display = 'none';
+            if (successElement) successElement.style.display = 'none';
+        }
+
+        function clearEditMessages() {
+            const errorElement = document.getElementById('editErrorMessage');
+            const successElement = document.getElementById('editSuccessMessage');
+            
+            if (errorElement) errorElement.style.display = 'none';
+            if (successElement) successElement.style.display = 'none';
+        }
+
+        function clearHolidayMessages() {
+            const errorElement = document.getElementById('holidayErrorMessage');
+            const successElement = document.getElementById('holidaySuccessMessage');
+            
+            if (errorElement) errorElement.style.display = 'none';
+            if (successElement) successElement.style.display = 'none';
+        }
+
+        function clearLocationMessages() {
+            const errorElement = document.getElementById('locationErrorMessage');
+            const successElement = document.getElementById('locationSuccessMessage');
+            
+            if (errorElement) errorElement.style.display = 'none';
+            if (successElement) successElement.style.display = 'none';
+        }
+
+        function clearExportMessages() {
+            const errorElement = document.getElementById('exportErrorMessage');
+            const successElement = document.getElementById('exportSuccessMessage');
+            
+            if (errorElement) errorElement.style.display = 'none';
+            if (successElement) successElement.style.display = 'none';
+        }
+
+        function showAttendanceError(message) {
+            showMessage('errorMessage', message);
+        }
+
+        function showAttendanceSuccess(message) {
+            showMessage('successMessage', message);
+        }
+
+        function showEditError(message) {
+            showMessage('editErrorMessage', message);
+        }
+
+        function showEditSuccess(message) {
+            showMessage('editSuccessMessage', message);
+        }
+
+        function showHolidayError(message) {
+            showMessage('holidayErrorMessage', message);
+        }
+
+        function showHolidaySuccess(message) {
+            showMessage('holidaySuccessMessage', message);
+        }
+
+        function showLocationError(message) {
+            showMessage('locationErrorMessage', message);
+        }
+
+        function showLocationSuccess(message) {
+            showMessage('locationSuccessMessage', message);
+        }
+
+        function showExportError(message) {
+            showMessage('exportErrorMessage', message);
+        }
+
+        function showExportSuccess(message) {
+            showMessage('exportSuccessMessage', message);
+        }
+
+        function showMessage(elementId, message) {
+            try {
+                if (!message) return;
+                
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = message;
+                    element.style.display = 'block';
+
+                    setTimeout(() => {
+                        element.style.display = 'none';
+                    }, 5000);
+                } else {
+                    console.error('メッセージ表示要素が見つかりません:', elementId);
+                    alert(message);
+                }
+            } catch (error) {
+                console.error('メッセージ表示中にエラー発生:', error);
+                alert(message);
+            }
+        }
+
+        function showLoading(isLoading) {
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.style.display = isLoading ? 'block' : 'none';
+            }
+        }
+
+        // グローバルエラーハンドリング
+        window.addEventListener('error', function(event) {
+            console.error('グローバルエラー:', event.error);
+            showAttendanceError('予期せぬエラーが発生しました。ページをリロードしてください。');
+        });
+
+        // ネットワーク状態の監視
+        window.addEventListener('online', function() {
+            console.log('ネットワーク接続が復旧しました');
+            showAttendanceSuccess('ネットワーク接続が復旧しました');
+            // 必要に応じてデータを再ロード
+            initializeApp();
+        });
+
+        window.addEventListener('offline', function() {
+            console.warn('ネットワーク接続が切断されました');
+            showAttendanceError('ネットワーク接続が切断されました。接続が復旧したら自動的に更新されます。');
+        });
+    </script>
+</body>
+</html>

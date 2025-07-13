@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勤怠管理システム - ログイン</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 40px;
+            padding-bottom: 40px;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .login-form {
+            width: 100%;
+            max-width: 400px;
+            padding: 15px;
+            margin: auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        .login-form h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #343a40;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            font-weight: 500;
+        }
+        .btn-login {
+            background-color: #28a745;
+            color: white;
+            width: 100%;
+            font-weight: 600;
+            padding: 10px;
+        }
+        .btn-login:hover {
+            background-color: #218838;
+            color: white;
+        }
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-form">
+            <h1>勤怠管理システム</h1>
+            <div id="errorMessage" class="error-message"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">ユーザー名</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">パスワード</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-login">ログイン</button>
+            </form>
+            <div class="signup-link">
+                <p>アカウントをお持ちでない方は <a href="register.html">新規登録</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // JWTトークンが存在する場合はダッシュボードへリダイレクト
+            if (localStorage.getItem('jwtToken')) {
+                window.location.href = 'index.html';
+            }
+            
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                
+                if (!username || !password) {
+                    showError('ユーザー名とパスワードを入力してください');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            password: password
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json(); // UserResponse DTOを受け取る
+                        // ユーザー情報をローカルストレージに保存
+                        localStorage.setItem('userId', data.userId);
+                        localStorage.setItem('username', data.username);
+                        localStorage.setItem('userRole', data.role); // ユーザーのロールも保存
+                        localStorage.setItem('jwtToken', data.token); // JWTトークンを保存
+                        
+                        // ダッシュボードにリダイレクト
+                        window.location.href = 'index.html';
+                    } else {
+                        const errorData = await response.json().catch(() => null);
+                        if (errorData && errorData.message) {
+                            showError(errorData.message);
+                        } else {
+                            showError('ログインに失敗しました');
+                        }
+                    }
+                } catch (error) {
+                    console.error('エラー:', error);
+                    showError('サーバーとの通信中にエラーが発生しました');
+                }
+            });
+            
+            function showError(message) {
+                const errorElement = document.getElementById('errorMessage');
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+                
+                // 5秒後にエラーメッセージを非表示にする
+                setTimeout(() => {
+                    errorElement.style.display = 'none';
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
