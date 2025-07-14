@@ -1,4 +1,4 @@
-package com.example.kinntai.service.impl;
+	package com.example.kinntai.service.impl;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -289,66 +289,66 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 	}
 
-	/*勤怠時刻の修正
-	 * Attendances登録された定時データを修正*/
-	@Override
-	public Attendance updateUserAttendance(Long userId, UserAttendanceUpdateRequestDto request)
-			throws IllegalAccessException {
-		User user = userRepository.findById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("指定されたユーザーが存在しません。" + userId));
-
-		/*時刻とユーザーidで修正対象を検索*/
-		List<Attendance> existingAttendanceOptional = attendanceRepository.findAllByUser_IdAndDate(userId,
-				request.getDate());
-		/*修正対象があれば修正をする*/
-		Attendance attendance = existingAttendanceOptional.stream()
-				.max(Comparator.comparing(Attendance::getCreatedAt))
-				.orElseThrow(() -> new IllegalAccessException("指定された日付の勤怠記録が見つかりません。"));
-
-		/*勤務開始の修正*/
-		if (request.getStartTime() != null) {
-			attendance.setClockIn(LocalDateTime.of(request.getDate(), request.getStartTime()));
-		} else {
-			attendance.setClockIn(null);//値が入力されてない場合はnullを格納
-		}
-
-		/*退勤時間の修正*/
-		if (request.getEndTime() != null) {
-			LocalDateTime clockOutDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
-			/*退勤時刻が出勤時刻より前（０時過ぎ）の場合は翌日の勤怠として扱う*/
-			if (attendance.getClockIn() != null && request.getEndTime().isBefore(request.getStartTime())) {
-				clockOutDateTime = clockOutDateTime.plusDays(1);
+		/*勤怠時刻の修正
+		 * Attendances登録された定時データを修正*/
+		@Override
+		public Attendance updateUserAttendance(Long userId, UserAttendanceUpdateRequestDto request)
+				throws IllegalAccessException {
+			User user = userRepository.findById(userId)
+					.orElseThrow(() -> new IllegalArgumentException("指定されたユーザーが存在しません。" + userId));
+	
+			/*時刻とユーザーidで修正対象を検索*/
+			List<Attendance> existingAttendanceOptional = attendanceRepository.findAllByUser_IdAndDate(userId,
+					request.getDate());
+			/*修正対象があれば修正をする*/
+			Attendance attendance = existingAttendanceOptional.stream()
+					.max(Comparator.comparing(Attendance::getCreatedAt))
+					.orElseThrow(() -> new IllegalAccessException("指定された日付の勤怠記録が見つかりません。"));
+	
+			/*勤務開始の修正*/
+			if (request.getStartTime() != null) {
+				attendance.setClockIn(LocalDateTime.of(request.getDate(), request.getStartTime()));
+			} else {
+				attendance.setClockIn(null);//値が入力されてない場合はnullを格納
 			}
-
-			attendance.setClockOut(clockOutDateTime);
-		} else {
-			attendance.setClockOut(null);
+	
+			/*退勤時間の修正*/
+			if (request.getEndTime() != null) {
+				LocalDateTime clockOutDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
+				/*退勤時刻が出勤時刻より前（０時過ぎ）の場合は翌日の勤怠として扱う*/
+				if (attendance.getClockIn() != null && request.getEndTime().isBefore(request.getStartTime())) {
+					clockOutDateTime = clockOutDateTime.plusDays(1);
+				}
+	
+				attendance.setClockOut(clockOutDateTime);
+			} else {
+				attendance.setClockOut(null);
+			}
+	
+			/*休憩時間修正後にも60分の休憩時間を適用*/
+			if (attendance.getClockIn() != null && attendance.getClockOut() != null) {
+				/*勤務時刻を取得し分単位で比較*/
+				long totalDurationMinutes = Duration.between(
+						attendance.getClockIn(), attendance.getClockOut()).toMinutes();
+				/*休憩時間を格納*/
+				long breakMinutes = 60L;
+				attendance.setTotalBreakMin(breakMinutes);
+	
+				/*休憩時間を計算*/
+				long actualWorkMinutes = Math.max(0, totalDurationMinutes - breakMinutes);
+				attendance.setTotalWorkMin(actualWorkMinutes);
+	
+				Long overtime = calculateOvertime(
+						user, attendance.getClockIn(),attendance.getClockOut(),actualWorkMinutes);
+				attendance.setOvertimeMinutes(overtime);
+			} else {
+				attendance.setTotalBreakMin(null);
+				attendance.setTotalWorkMin(null);
+			}
+	
+			attendance.setUpdatedAt(LocalDateTime.now());
+			return attendanceRepository.save(attendance);
 		}
-
-		/*休憩時間修正後にも60分の休憩時間を適用*/
-		if (attendance.getClockIn() != null && attendance.getClockOut() != null) {
-			/*勤務時刻を取得し分単位で比較*/
-			long totalDurationMinutes = Duration.between(
-					attendance.getClockIn(), attendance.getClockOut()).toMinutes();
-			/*休憩時間を格納*/
-			long breakMinutes = 60L;
-			attendance.setTotalBreakMin(breakMinutes);
-
-			/*休憩時間を計算*/
-			long actualWorkMinutes = Math.max(0, totalDurationMinutes - breakMinutes);
-			attendance.setTotalWorkMin(actualWorkMinutes);
-
-			Long overtime = calculateOvertime(
-					user, attendance.getClockIn(),attendance.getClockOut(),actualWorkMinutes);
-			attendance.setOvertimeMinutes(overtime);
-		} else {
-			attendance.setTotalBreakMin(null);
-			attendance.setTotalWorkMin(null);
-		}
-
-		attendance.setUpdatedAt(LocalDateTime.now());
-		return attendanceRepository.save(attendance);
-	}
 
 	/*残業時間の計算のヘルパー（補助）メソッド
 	 * 残業計算部分を切り離して活用*/
