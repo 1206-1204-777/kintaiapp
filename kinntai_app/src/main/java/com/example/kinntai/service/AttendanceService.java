@@ -13,7 +13,7 @@ public interface AttendanceService {
 	/**
 	 * 出勤処理
 	 */
-	Attendance clockIn(Long userId);
+	Attendance clockIn(Long userId,String type);
 
 	/**
 	 * 退勤処理
@@ -52,6 +52,8 @@ public interface AttendanceService {
 	List<AttendanceResponse> getAllUser();
 
 	List<AttendanceResponse> getAttendanceUser(Long userId);
+	
+
 	
 	Attendance updateUserAttendance(Long userId,UserAttendanceUpdateRequestDto request) throws IllegalAccessException;
 

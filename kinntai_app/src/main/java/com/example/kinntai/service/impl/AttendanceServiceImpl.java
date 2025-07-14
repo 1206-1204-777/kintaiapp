@@ -20,8 +20,8 @@ import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
 import com.example.kinntai.entity.Location;
 import com.example.kinntai.entity.User;
+import com.example.kinntai.entity.WorkType;
 import com.example.kinntai.repository.AttendanceRepository;
-import com.example.kinntai.repository.LocationRepository;
 import com.example.kinntai.repository.UserRepository;
 import com.example.kinntai.service.AttendanceService;
 
@@ -33,15 +33,13 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 	@Autowired
 	private UserRepository userRepository;
-	@Autowired
-	private LocationRepository locationRepository;
 
 	/**
 	 * 出勤処理
 	 */
 	@Override
 	@Transactional
-	public Attendance clockIn(Long userId) {
+	public Attendance clockIn(Long userId, String type) {
 		try {
 			User user = userRepository.findById(userId)
 					.orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
@@ -65,6 +63,8 @@ public class AttendanceServiceImpl implements AttendanceService {
 			if (attendance.getTotalWorkMin() == null) {
 				attendance.setTotalWorkMin(0L);
 			}
+			
+			attendance.setWorkType(WorkType.valueOf(type));
 
 			return attendanceRepository.save(attendance);
 		} catch (Exception e) {
@@ -73,6 +73,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 			throw e;
 		}
 	}
+	
 
 	/**
 	 * 退勤処理

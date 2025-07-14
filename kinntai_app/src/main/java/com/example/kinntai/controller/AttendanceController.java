@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.kinntai.config.ApiResponse;
 import com.example.kinntai.dto.AttendanceResponse;
+import com.example.kinntai.dto.ClockInRequestDto;
 import com.example.kinntai.dto.UserAttendanceUpdateRequestDto;
 import com.example.kinntai.entity.Attendance;
 import com.example.kinntai.service.AttendanceService;
@@ -31,18 +33,17 @@ public class AttendanceController {
 	/**
 	 * 出勤処理
 	 */
-	@PostMapping("/clock-in/{userId}")
-	public ResponseEntity<Attendance> clockIn(@PathVariable Long userId) {
-		try {
-			System.out.println("出勤リクエスト: userId=" + userId);
-			Attendance attendance = attendanceService.clockIn(userId);
-			return ResponseEntity.ok(attendance);
-		} catch (Exception e) {
-			System.err.println("出勤処理エラー: " + e.getMessage());
-			e.printStackTrace();
-			return ResponseEntity.badRequest().build();
-		}
+
+	@PostMapping("/clockin")
+	public ResponseEntity<ApiResponse> clockIn(@RequestBody ClockInRequestDto request) {
+	    try {
+	        attendanceService.clockIn(request.getUserId(), request.getType());
+	        return ResponseEntity.ok(new ApiResponse("出勤が記録されました",true));
+	    } catch (IllegalArgumentException e) {
+	        return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(),false));
+	    }
 	}
+
 
 	/**
 	 * 退勤処理
@@ -137,6 +138,7 @@ public class AttendanceController {
 		}
 	}
 
+	//一般ユーザーからのリクエストの場合は打刻から30分だけ有効
 	@PostMapping("/update/{userId}")
 	public ResponseEntity<Attendance> updateAttndance(
 			@PathVariable Long userId,

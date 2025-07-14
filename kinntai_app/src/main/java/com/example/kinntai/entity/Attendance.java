@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -58,6 +60,10 @@ public class Attendance {
 
 	@Column(name = "overtime_minutes")
 	private Long overtimeMinutes;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "work_yype")
+	private WorkType workType;
 
 	public Attendance(User user, LocalDate date) {
 		this.user = user;
