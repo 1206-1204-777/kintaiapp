@@ -4,10 +4,13 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.example.kinntai.dto.ScheduleRequestDto;
+import com.example.kinntai.dto.SubmittedScheduleResponseDto;
 import com.example.kinntai.entity.Schedule;
 
 public interface ScheduleService {
     void saveSchedule(ScheduleRequestDto request);
     List<Schedule> getWeeklySchedule(Long userId, LocalDate weekStart);
 	void approveSchedule(Long id);
+    List<SubmittedScheduleResponseDto> getSubmittedSchedules(Long userId); 
+
 }

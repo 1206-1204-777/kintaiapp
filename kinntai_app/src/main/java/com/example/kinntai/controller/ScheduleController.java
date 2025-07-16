@@ -28,14 +28,22 @@ public class ScheduleController {
 
     private final ScheduleService scheduleService;
 
-    // 📌 スケジュール提出
+    // 📌 スケジュール提出 (既存)
     @PostMapping("/submit")
     public ResponseEntity<ApiResponse> submitSchedule(@RequestBody ScheduleRequestDto request) {
-        scheduleService.saveSchedule(request);
+        scheduleService.saveSchedule(request); // saveSchedule を再利用
         return ResponseEntity.ok(new ApiResponse("スケジュールを提出しました",true));
     }
 
-    // 📌 指定週のスケジュールを取得（ユーザー表示用）
+    // 📌 スケジュール保存 (新規追加) - saveScheduleData から呼ばれる
+    // submit と同じ DTO を使うので、メソッド名を分けることで用途を明確にする
+    @PostMapping("/save")
+    public ResponseEntity<ApiResponse> saveSchedule(@RequestBody ScheduleRequestDto request) {
+        scheduleService.saveSchedule(request); // saveSchedule を再利用
+        return ResponseEntity.ok(new ApiResponse("スケジュールを保存しました",true));
+    }
+
+    // 📌 指定週のスケジュールを取得（ユーザー表示用）(既存)
     @GetMapping("/week")
     public ResponseEntity<List<Schedule>> getWeeklySchedule(
             @RequestParam Long userId,
@@ -44,10 +52,19 @@ public class ScheduleController {
         return ResponseEntity.ok(schedules);
     }
 
-    // 📌 管理者による承認（オプション）
+    // 📌 管理者による承認（オプション）(既存)
     @PutMapping("/{id}/approve")
     public ResponseEntity<ApiResponse> approveSchedule(@PathVariable Long id) {
         scheduleService.approveSchedule(id);
         return ResponseEntity.ok(new ApiResponse("スケジュールを承認しました",true));
+    }
+
+    // 📌 提出済みスケジュール履歴を取得 (新規追加) - loadSubmittedSchedules から呼ばれる。
+    @GetMapping("/submitted")
+    public ResponseEntity<List<Schedule>> getSubmittedSchedules(@RequestParam Long userId) {
+
+        LocalDate now = LocalDate.now();
+        List<Schedule> submittedSchedules = scheduleService.getWeeklySchedule(userId, now.withDayOfMonth(1)); // 仮の取得
+        return ResponseEntity.ok(submittedSchedules); // 仮の戻り値
     }
 }

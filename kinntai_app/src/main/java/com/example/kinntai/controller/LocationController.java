@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -122,5 +123,18 @@ public class LocationController {
 	        return new ResponseEntity<>(HttpStatus.NOT_FOUND); // 勤務地が設定されていない場合
 	    }
 	    return new ResponseEntity<>(location, HttpStatus.OK);
+	}
+	
+	// LocationController.javaに追加が必要
+	@PutMapping("/{id}")
+	public ResponseEntity<?> updateLocation(@PathVariable Long id, @RequestBody LocationRequest locationRequest) {
+	    try {
+	        Location updatedLocation = locationService.updateLocation(id, locationRequest);
+	        return ResponseEntity.ok(updatedLocation);
+	    } catch (EntityNotFoundException e) {
+	        return ResponseEntity.notFound().build();
+	    } catch (Exception e) {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("勤務地更新に失敗しました。");
+	    }
 	}
 }
