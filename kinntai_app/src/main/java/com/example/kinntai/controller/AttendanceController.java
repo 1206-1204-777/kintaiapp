@@ -2,6 +2,7 @@ package com.example.kinntai.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional; // Optionalをインポート
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -87,9 +88,12 @@ public class AttendanceController {
 		try {
 			System.out.println("日次勤怠情報取得: userId=" + userId + ", date=" + date);
 
-			return attendanceService.getAttendanceByDate(userId, date)
-					.map(ResponseEntity::ok)
-					.orElse(ResponseEntity.notFound().build());
+			Optional<Attendance> attendance = attendanceService.getAttendanceByDate(userId, date);
+			
+			// 🚨 修正点: データが見つからなかった場合 (Optional.empty()) でも200 OKを返し、ボディをnullにする
+			// これにより、フロントエンドが404エラーとして扱わないようになる
+			return attendance.map(ResponseEntity::ok)
+					.orElse(ResponseEntity.ok(null)); // データがない場合は200 OK with null body
 		} catch (Exception e) {
 			System.err.println("日次勤怠情報取得エラー: " + e.getMessage());
 			e.printStackTrace();

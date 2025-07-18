@@ -14,7 +14,7 @@ import com.example.kinntai.entity.Attendance;
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
-    Optional<Attendance> findByUser_IdAndDate(Long userId, LocalDate date);
+	Optional<Attendance> findByUser_IdAndDate(Long userId, LocalDate date);
 
 	List<Attendance> findByUser_IdAndDateBetweenOrderByDateAsc(Long userId, LocalDate startDate, LocalDate endDate);
 
@@ -31,6 +31,15 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
 	@Query("SELECT a FROM Attendance a WHERE a.date = :date AND a.clockIn IS NOT NULL AND a.clockOut IS NULL")
 	List<Attendance> findByAttendanceDateAndClockInNotNullAndClockOutIsNull(@Param("date") LocalDate today);
+
+	List<Attendance> findAllByUser_Id(Long userId);
+
+	List<Attendance> findAllByUser_IdAndDate(Long userId, LocalDate date);
 	
-    List<Attendance> findAllByUser_Id(Long userId);
-    List<Attendance> findAllByUser_IdAndDate(Long userId, LocalDate date);}
+    // 特定の日付で、出勤済みかつ未退勤の勤怠記録を検索
+    List<Attendance> findByDateAndClockInNotNullAndClockOutIsNull(LocalDate date);
+    
+    // 深夜をまたぐ勤務でも正しいレコードを見つける
+    Optional<Attendance> findByUser_IdAndClockInIsNotNullAndClockOutIsNullOrderByDateDesc(Long userId);
+
+}

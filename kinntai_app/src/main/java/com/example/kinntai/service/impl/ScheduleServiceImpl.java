@@ -8,9 +8,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // トランザクション管理を追加
 
 import com.example.kinntai.dto.ScheduleRequestDto;
-import com.example.kinntai.dto.SubmittedScheduleResponseDto; // 追加
+import com.example.kinntai.dto.SubmittedScheduleResponseDto;
 import com.example.kinntai.entity.RequestStatus;
 import com.example.kinntai.entity.Schedule;
 import com.example.kinntai.entity.WorkType;
@@ -26,16 +27,16 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final ScheduleRepository scheduleRepository;
 
     @Override
+    @Transactional // トランザクションを追加し、操作の原子性を保証
     public void saveSchedule(ScheduleRequestDto request) {
-        // 既存のスケジュールを削除してから保存することで、月のスケジュールを上書きする
-        // ただし、ステータスがPENDINGのもののみを対象とするなど、より複雑なロジックが必要な場合もある
-        // ここでは、指定されたuserIdと月の既存スケジュールを全て削除するシンプルな実装
-        // まず、リクエストに含まれる日付の月を特定
+        // リクエストに含まれる日付の月を特定
         if (request.getDays() != null && !request.getDays().isEmpty()) {
             LocalDate firstDateOfMonth = request.getDays().get(0).getDate().withDayOfMonth(1);
             LocalDate lastDateOfMonth = firstDateOfMonth.withDayOfMonth(firstDateOfMonth.lengthOfMonth());
 
-            // 既存のスケジュールを削除
+            // 指定されたuserIdと月の既存のPENDINGステータスのスケジュールを削除
+            // APPROVEDやREJECTEDのスケジュールは削除しないようにする（ビジネスロジックによる）
+            // 現状では全てのスケジュールを削除するシンプルな実装だが、必要に応じてステータスでフィルタリングする
             scheduleRepository.deleteByUserIdAndDateBetween(request.getUserId(), firstDateOfMonth, lastDateOfMonth);
         }
 
@@ -44,7 +45,16 @@ public class ScheduleServiceImpl implements ScheduleService {
             Schedule schedule = new Schedule();
             schedule.setUserId(request.getUserId());
             schedule.setDate(day.getDate());
-            schedule.setType(WorkType.valueOf(day.getType()));
+            // 🚨 修正点: WorkType.valueOf() の前に大文字に変換
+            // フロントエンドから "work" や "holiday" のように小文字で来る可能性があるため
+            try {
+                schedule.setType(WorkType.valueOf(day.getType().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                // 不正なWorkTypeが来た場合のハンドリング
+                System.err.println("Invalid WorkType received: " + day.getType());
+                // 例外をスローするか、デフォルト値を設定するか、ビジネスロジックに応じて処理
+                throw new RuntimeException("Invalid WorkType: " + day.getType(), e);
+            }
             schedule.setStatus(RequestStatus.PENDING); // 新規保存時はPENDING
             schedules.add(schedule);
         }
@@ -58,9 +68,10 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
+    @Transactional
     public void approveSchedule(Long scheduleId) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new RuntimeException("Schedule not found"));
+            .orElseThrow(() -> new RuntimeException("Schedule not found with id: " + scheduleId)); // エラーメッセージを改善
         schedule.setStatus(RequestStatus.APPROVED);
         scheduleRepository.save(schedule);
     }
@@ -69,7 +80,13 @@ public class ScheduleServiceImpl implements ScheduleService {
     public List<SubmittedScheduleResponseDto> getSubmittedSchedules(Long userId) {
         // 特定のユーザーの全てのスケジュールを取得
         // 実際には、提出された月のスケジュールのみを対象とするのが一般的
-        List<Schedule> allUserSchedules = scheduleRepository.findByUserId(userId);
+        // ここでは、現在の月から過去12ヶ月分のスケジュールを取得する例に修正
+        LocalDate now = LocalDate.now();
+        LocalDate twelveMonthsAgo = now.minusMonths(11).withDayOfMonth(1); // 過去12ヶ月の最初の日
+
+        // 🚨 修正点: findByUserIdAndDateBetween を使用して期間を限定
+        List<Schedule> allUserSchedules = scheduleRepository.findByUserIdAndDateBetween(userId, twelveMonthsAgo, now.withDayOfMonth(now.lengthOfMonth()));
+
 
         // 月ごとにスケジュールをグループ化
         Map<String, List<Schedule>> schedulesByMonth = allUserSchedules.stream()
@@ -83,7 +100,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             int workDays = 0;
             int holidayDays = 0;
             RequestStatus status = RequestStatus.PENDING; // 月のステータスを決定するための仮の初期値
-            String submittedAt = LocalDate.now().toString(); // 仮の提出日時
+            String submittedAt = null; // 提出日時を初期化
             String approverName = "-"; // 仮の承認者名
 
             // 月内のスケジュールを集計
@@ -93,24 +110,31 @@ public class ScheduleServiceImpl implements ScheduleService {
                 } else if (schedule.getType() == WorkType.HOLIDAY) {
                     holidayDays++;
                 }
-                // 月のステータスを決定（例: 一つでもREJECTEDがあればREJECTED、全てAPPROVEDならAPPROVEDなど）
-                // ここでは最も新しいステータスを採用する、あるいは最も優先度の高いステータスを採用するロジックが必要
-                // 簡単のため、ここではPENDING以外のステータスがあればそれを優先する
-                if (schedule.getStatus() == RequestStatus.APPROVED) {
-                    status = RequestStatus.APPROVED;
+                // 月のステータスを決定するロジック
+                // 例: 1つでもREJECTEDがあればREJECTED、全てAPPROVEDならAPPROVED、それ以外はPENDING
+                if (schedule.getStatus() == RequestStatus.REJECTED) {
+                    status = RequestStatus.REJECTED;
                     // 承認者名もここで設定するロジックが必要（例: schedule.getApproverName()があれば）
                     // 現在のScheduleエンティティにはapproverNameがないため、仮の値
-                    approverName = "管理者A"; // 仮の承認者名
-                } else if (schedule.getStatus() == RequestStatus.REJECTED) {
-                    status = RequestStatus.REJECTED;
                     approverName = "管理者B"; // 仮の承認者名
+                    break; // REJECTEDが見つかったらそれ以上チェックする必要はない
+                } else if (schedule.getStatus() == RequestStatus.APPROVED) {
+                    status = RequestStatus.APPROVED;
+                    approverName = "管理者A"; // 仮の承認者名
                 }
-                // 提出日時も、実際に提出された日時を記録するフィールドがあればそれを使用
-                // submittedAt = schedule.getSubmittedAt() != null ? schedule.getSubmittedAt().toString() : submittedAt;
+                // 提出日時を、実際に提出された日時を記録するフィールドがあればそれを使用
+                // 現在のScheduleエンティティにはsubmittedAtがないため、ここでは最も古い日付を提出日と仮定
+                if (submittedAt == null || schedule.getDate().isBefore(LocalDate.parse(submittedAt))) {
+                    submittedAt = schedule.getDate().toString();
+                }
+            }
+
+            // 提出日時が設定されていない場合、月の最初の日を仮の提出日時とする
+            if (submittedAt == null) {
+                submittedAt = month + "-01";
             }
 
             // id は、月ごとの提出履歴を一意に識別できるものが必要
-            // ここでは userId と month を組み合わせた文字列を仮のIDとする
             String id = userId + "-" + month;
 
             submittedSchedules.add(new SubmittedScheduleResponseDto(

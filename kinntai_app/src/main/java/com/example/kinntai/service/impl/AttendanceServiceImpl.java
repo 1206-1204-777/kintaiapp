@@ -1,4 +1,4 @@
-	package com.example.kinntai.service.impl;
+package com.example.kinntai.service.impl;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -85,27 +85,24 @@ public class AttendanceServiceImpl implements AttendanceService {
 			User user = userRepository.findById(userId)
 					.orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
 
-			LocalDate today = LocalDate.now();
+            // 現在時刻（日付情報も含む）
+            LocalDateTime now = LocalDateTime.now(); 
 
-			// 当日の勤怠記録を取得
-			Attendance attendance = attendanceRepository.findByUser_IdAndDate(userId, today)
+            // 🚨 修正点: 最も新しい「出勤済みで未退勤」の記録を検索
+            // AttendanceRepositoryに findByUser_IdAndClockInIsNotNullAndClockOutIsNullOrderByDateDesc(Long userId) が必要
+            Optional<Attendance> attendanceOpt = attendanceRepository.findByUser_IdAndClockInIsNotNullAndClockOutIsNullOrderByDateDesc(userId);
+
+            // アクティブな勤怠記録が見つからなければエラー
+			Attendance attendance = attendanceOpt
 					.orElseThrow(() -> new RuntimeException("本日の出勤記録がありません。"));
-			// 定時時刻を取得
-			//			Location location = locationRepository.findByName(null)
-			//					.orElseThrow(() -> new RuntimeException("定時時刻が登録されていません。"));
-
-			// 出勤していない場合はエラー
-			if (attendance.getClockIn() == null) {
-				throw new RuntimeException("まだ出勤していません");
-			}
-
-			// 既に退勤済みの場合はエラー
+			
+			// 既に退勤済みの場合はエラー（findByUser_IdAndClockInIsNotNullAndClockOutIsNullOrderByDateDesc で取得しているため、基本的には不要だが念のため）
 			if (attendance.getClockOut() != null) {
 				throw new RuntimeException("すでに退勤済みです");
 			}
 
 			// 退勤時刻を設定
-			attendance.setClockOut(LocalDateTime.now());
+			attendance.setClockOut(now); // 現在時刻を設定
 			attendance.setUpdatedAt(LocalDateTime.now());
 
 			// 1. 総勤務時間（出勤から退勤までの時間）を計算
@@ -144,14 +141,12 @@ public class AttendanceServiceImpl implements AttendanceService {
 			User user = userRepository.findById(userId)
 					.orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
 
-			LocalDate today = LocalDate.now();
-
-			// 当日の勤怠記録を取得
-			Optional<Attendance> attendanceOpt = attendanceRepository.findByUser_IdAndDate(userId, today);
+            // 🚨 修正点: 最も新しい「出勤済みで未退勤」の記録を検索
+            Optional<Attendance> attendanceOpt = attendanceRepository.findByUser_IdAndClockInIsNotNullAndClockOutIsNullOrderByDateDesc(userId);
 
 			AttendanceResponse response = new AttendanceResponse();
 			response.setUserId(userId);
-			response.setDate(today);
+			response.setDate(LocalDate.now()); // レスポンスの日付はあくまで今日の日付
 
 			if (attendanceOpt.isPresent()) {
 				Attendance attendance = attendanceOpt.get();
@@ -160,8 +155,10 @@ public class AttendanceServiceImpl implements AttendanceService {
 				response.setClockOut(attendance.getClockOut());
 
 				// 勤務中かどうかの判定
+				// clockInが存在し、かつclockOutがnullの場合のみworkingをtrueにする
 				response.setWorking(attendance.getClockIn() != null && attendance.getClockOut() == null);
 			} else {
+				// 勤怠記録自体が存在しない場合はworkingをfalseにする
 				response.setWorking(false);
 			}
 
@@ -275,6 +272,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 		return attendanceRepository.findAll()
 				.stream()
 				.map(AttendanceResponse::fromEntity)
+
 				.collect(Collectors.toList());
 
 	}
