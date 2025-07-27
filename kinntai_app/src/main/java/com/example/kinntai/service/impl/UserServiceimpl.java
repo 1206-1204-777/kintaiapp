@@ -95,7 +95,7 @@ public class UserServiceimpl implements UserService {
 				.orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
 
 		
-
+ 
 		UserLocationResponse response = new UserLocationResponse();
 		response.setUserId(user.getId());
 		response.setUsername(user.getUsername());

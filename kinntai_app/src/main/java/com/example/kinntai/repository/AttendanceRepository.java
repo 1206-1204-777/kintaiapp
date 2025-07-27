@@ -42,4 +42,10 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     // 深夜をまたぐ勤務でも正しいレコードを見つける
     Optional<Attendance> findByUser_IdAndClockInIsNotNullAndClockOutIsNullOrderByDateDesc(Long userId);
 
+	List<Attendance> findByDate(LocalDate date);
+
+	// 特定の日付に完全に一致する勤怠記録を検索するための新しいクエリ
+	@Query("SELECT a FROM Attendance a WHERE a.date = :date")
+	List<Attendance> findByDateExact(@Param("date") LocalDate date);
+
 }

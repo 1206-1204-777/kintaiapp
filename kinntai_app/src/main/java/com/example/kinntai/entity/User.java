@@ -1,5 +1,6 @@
 package com.example.kinntai.entity;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,6 +63,9 @@ public class User implements UserDetails{
 
 	@Column(name = "default_end_time")
 	private LocalTime defaultEndTime;
+	
+	@Column(name = "created_at")
+	private LocalDate createdAt;
 	
 	@OneToMany(mappedBy = "createdBy")
     private List<Location> locations;

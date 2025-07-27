@@ -19,13 +19,12 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class EditRequestServiceImpl implements EditRequestService {
+public class EditRequestServiceImpl implements EditRequestService{
 
     private final EditRequestRepository editRequestRepository;
     private final AttendanceRepository attendanceRepository;
     private final UserService userService;
 
-    @Override
     public void submitRequest(CorrectionRequestDto dto) {
         // Attendanceの現在時刻を取得
         List<Attendance> records = attendanceRepository.findAllByUser_IdAndDate(dto.getUserId(), dto.getTargetDate());
@@ -51,12 +50,10 @@ public class EditRequestServiceImpl implements EditRequestService {
         editRequestRepository.save(request);
     }
 
-    @Override
     public List<EditRequest> getRequestsByUser(Long userId) {
         return editRequestRepository.findByUserId(userId);
     }
 
-    @Override
     public void approveRequest(Long requestId, Long approverId) {
         EditRequest request = editRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("申請が見つかりません"));
@@ -84,7 +81,6 @@ public class EditRequestServiceImpl implements EditRequestService {
         editRequestRepository.save(request);
     }
 
-    @Override
     public void rejectRequest(Long requestId, Long approverId) {
         EditRequest request = editRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("申請が見つかりません"));
@@ -94,5 +90,25 @@ public class EditRequestServiceImpl implements EditRequestService {
         request.setApprovedDate(LocalDateTime.now());
 
         editRequestRepository.save(request);
+    }
+
+    // 管理者用: 全ユーザーの勤怠修正申請を取得
+    public List<EditRequest> getAllEditRequests() {
+        return editRequestRepository.findAllByOrderByRequestDateDesc();
+    }
+
+    // 管理者用: 承認待ちの勤怠修正申請数を取得
+    public int getPendingEditRequestCount() {
+        return editRequestRepository.countByStatus(RequestStatus.PENDING);
+    }
+
+    // 管理者用: 全勤怠修正申請数を取得
+    public int getTotalRequestCount() {
+        return (int) editRequestRepository.count();
+    }
+
+    // 管理者用: ステータス別勤怠修正申請を取得
+    public List<EditRequest> getEditRequestsByStatus(RequestStatus status) {
+        return editRequestRepository.findByStatus(status);
     }
 }

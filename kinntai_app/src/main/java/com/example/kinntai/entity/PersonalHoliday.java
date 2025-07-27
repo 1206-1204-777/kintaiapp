@@ -14,6 +14,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonFormat; // JsonFormatをインポート
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -32,6 +34,7 @@ public class PersonalHoliday {
     private User user; // 申請ユーザー
 
     @Column(nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd") // ★追加: 日付フォーマットを指定
     private LocalDate holidayDate; // 休日日付
 
     @Enumerated(EnumType.STRING)
@@ -50,8 +53,10 @@ public class PersonalHoliday {
     private User approver;
 
     @Column(nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") // ★追加: 申請日時にもフォーマットを指定
     private LocalDateTime createdAt; // 申請日時
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") // ★追加: 更新日時にもフォーマットを指定
     private LocalDateTime updatedAt; // 更新日時
 
     // コンストラクタ (必要な場合にLombokの@AllArgsConstructorと併用)

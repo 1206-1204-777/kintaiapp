@@ -154,4 +154,46 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         return submittedSchedules;
     }
+    
+ // ScheduleServiceImpl.java に追加するメソッド
+ // 既存のクラスに以下のメソッドを追加してください
+
+ /**
+  * スケジュール申請を却下
+  */
+ @Transactional
+ public void rejectSchedule(Long scheduleId) {
+     Schedule schedule = scheduleRepository.findById(scheduleId)
+         .orElseThrow(() -> new RuntimeException("Schedule not found with id: " + scheduleId));
+     schedule.setStatus(RequestStatus.REJECTED);
+     scheduleRepository.save(schedule);
+ }
+
+ /**
+  * 管理者用: 全ユーザーのスケジュール申請を取得
+  */
+ public List<Schedule> getAllScheduleRequests() {
+     return scheduleRepository.findAllByOrderByDateDesc();
+ }
+
+ /**
+  * 管理者用: 承認待ちのスケジュール申請数を取得
+  */
+ public int getPendingScheduleRequestCount() {
+     return scheduleRepository.countByStatus(RequestStatus.PENDING);
+ }
+
+ /**
+  * 管理者用: 全スケジュール申請数を取得
+  */
+ public int getTotalRequestCount() {
+     return (int) scheduleRepository.count();
+ }
+
+ /**
+  * 管理者用: ステータス別スケジュール申請を取得
+  */
+ public List<Schedule> getScheduleRequestsByStatus(RequestStatus status) {
+     return scheduleRepository.findByStatus(status);
+ }
 }
