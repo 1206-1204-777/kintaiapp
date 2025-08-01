@@ -27,12 +27,17 @@ public class JwtUtil {
     private long EXPIRATION_TIME;
 
     // JWT生成
-    public String generateToken(String username,String role) {
+ // JwtUtil.java の generateToken メソッド修正版
+    public String generateToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
+        // ★修正: ROLE_プレフィックスを正しく付与
         claims.put("authorities", List.of("ROLE_" + role.toUpperCase()));
+        
+        // デバッグログ追加
+        System.out.println("JWT生成: username=" + username + ", role=" + role + ", authorities=" + claims.get("authorities"));
+        
         return createToken(claims, username);
     }
-
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setClaims(claims)

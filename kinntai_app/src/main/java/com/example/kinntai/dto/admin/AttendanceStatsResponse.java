@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor // 全フィールドを持つコンストラクタを自動生成
 public class AttendanceStatsResponse {
     private int present;              // 出勤者数
+    private int working;				// ★★★ 勤務中者数を追加 ★★★
     private int absent;               // 未出勤者数
     private int overtime;             // 残業者数
     private double totalOvertimeHours; // 総残業時間
