@@ -1,6 +1,7 @@
 package com.example.kinntai.controller.admin;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +14,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.kinntai.dto.admin.UnifiedRequestResponse;
 import com.example.kinntai.service.admin.AdminHolidayRequestService;
+import com.example.kinntai.service.admin.AdminUnifiedRequestService;
 import com.example.kinntai.service.impl.EditRequestServiceImpl;
 import com.example.kinntai.service.impl.OvertimeServiceImpl;
 import com.example.kinntai.service.impl.ScheduleServiceImpl;
+
 
 /**
  * 統合申請管理APIコントローラー
@@ -39,6 +43,8 @@ public class AdminUnifiedRequestController {
     @Autowired
     private OvertimeServiceImpl overtimeService;
 
+    @Autowired
+    private AdminUnifiedRequestService unifiedRequestService;
     /**
      * 全申請の統計情報を取得
      * 
@@ -130,6 +136,60 @@ public class AdminUnifiedRequestController {
         } catch (Exception e) {
             System.err.println("スケジュール却下エラー: " + e.getMessage());
             return ResponseEntity.badRequest().body("却下に失敗しました: " + e.getMessage());
+        }
+    }
+    
+    
+ // AdminUnifiedRequestController.java に以下のメソッドを追加
+
+    /**
+     * 統合申請一覧を取得
+     * 
+     * @param status フィルター用ステータス
+     * @param type フィルター用タイプ
+     * @return 統合申請一覧
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<UnifiedRequestResponse>> getAllUnifiedRequests(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String type) {
+        try {
+            List<UnifiedRequestResponse> requests = unifiedRequestService.getAllUnifiedRequests(status, type);
+            return ResponseEntity.ok(requests);
+        } catch (Exception e) {
+            System.err.println("統合申請一覧取得エラー: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * 承認待ち申請一覧を取得
+     */
+    @GetMapping("/pending")
+    public ResponseEntity<List<UnifiedRequestResponse>> getPendingRequests() {
+        try {
+            List<UnifiedRequestResponse> requests = unifiedRequestService.getPendingRequests();
+            return ResponseEntity.ok(requests);
+        } catch (Exception e) {
+            System.err.println("承認待ち申請取得エラー: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * 申請統計情報を取得
+     */
+    @GetMapping("/statistics")
+    public ResponseEntity<Map<String, Object>> getRequestStatistics() {
+        try {
+            Map<String, Object> stats = unifiedRequestService.getRequestStatistics();
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            System.err.println("申請統計取得エラー: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
         }
     }
 
