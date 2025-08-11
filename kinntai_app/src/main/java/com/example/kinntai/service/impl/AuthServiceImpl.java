@@ -46,19 +46,20 @@ public class AuthServiceImpl implements AuthService {
 
 		// パスワードのハッシュ化
 		String encodedPassword = passwordEncoder.encode(request.getPassword());
+		UserRole role = toUserRoleOrDefault(request.getRole().toString(), UserRole.GENERAL_USER);
 
 		// 新しいユーザーを作成と保存
 		User newUser = User.builder()
 				.username(request.getUsername())
 				.email(request.getEmail())
 				.password(encodedPassword)
-				.role(UserRole.GENERAL_USER)
+				.role(role)
 				.build();
 
 		User savedUser = userRepository.save(newUser);
 		/*登録後に自動ログイン
 		 * トークンを返す*/
-		String jwt = jwtUtil.generateToken(savedUser.getUsername(),savedUser.getRole().name());
+		String jwt = jwtUtil.generateToken(savedUser.getUsername(), savedUser.getRole().name());
 
 		return UserResponse.builder()
 				.userId(savedUser.getId())
@@ -78,14 +79,14 @@ public class AuthServiceImpl implements AuthService {
 			Authentication authentication = authenticationManager.authenticate(
 					new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 			SecurityContextHolder.getContext().setAuthentication(authentication);//認証に成功したらコンテキスト（設定）に格納
-			
+
 			UserDetails principal = (UserDetails) authentication.getPrincipal();
 
 			User userDetails = userRepository.findByUsername(principal.getUsername())
 					.orElseThrow(() -> new RuntimeException("認証されたユーザーが見つかりません。"));
-			
+
 			/*jwtトークン作成*/
-			String jwt = jwtUtil.generateToken(userDetails.getUsername(),userDetails.getRole().name());//トークン発行
+			String jwt = jwtUtil.generateToken(userDetails.getUsername(), userDetails.getRole().name());//トークン発行
 			return UserResponse.builder()
 					.userId(userDetails.getId())
 					.username(userDetails.getUsername())
@@ -97,6 +98,16 @@ public class AuthServiceImpl implements AuthService {
 			log.error("ログインエラー: " + e.getMessage());
 			e.printStackTrace();
 			throw e;
+		}
+	}
+
+	private static UserRole toUserRoleOrDefault(String raw, UserRole def) {
+		if (raw == null || raw.isBlank())
+			return def;
+		try {
+			return UserRole.valueOf(raw.trim().toUpperCase());
+		} catch (IllegalArgumentException ex) {
+			return def;
 		}
 	}
 }
